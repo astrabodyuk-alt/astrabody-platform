@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AssistantModal } from "./AssistantModal";
 
 /**
- * Floating sage / olive concierge button. Pure CSS conic-gradient with
- * a slow rotation + hue-rotate filter. Mounts the AssistantModal on
- * tap. Unread-badge prop is forwarded from the layout so the dot
- * lights up when the studio inbox has unread chats.
+ * Floating sage / olive concierge button. Draggable via pointer events —
+ * tap opens the modal, drag repositions. Unread-badge prop lights up
+ * when the studio inbox has unread chats.
  */
 export function AssistantBubble({
   hasUnread = false,
@@ -15,12 +14,53 @@ export function AssistantBubble({
   hasUnread?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  // Pulse on first paint to draw the eye, settles after 1.5s.
   const [pulse, setPulse] = useState(true);
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const drag = useRef<{
+    startClientX: number;
+    startClientY: number;
+    startBubbleX: number;
+    startBubbleY: number;
+    moved: boolean;
+  } | null>(null);
+
   useEffect(() => {
     const t = setTimeout(() => setPulse(false), 1500);
     return () => clearTimeout(t);
   }, []);
+
+  function onPointerDown(e: React.PointerEvent<HTMLButtonElement>) {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const rect = e.currentTarget.getBoundingClientRect();
+    drag.current = {
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      startBubbleX: rect.left,
+      startBubbleY: rect.top,
+      moved: false,
+    };
+  }
+
+  function onPointerMove(e: React.PointerEvent<HTMLButtonElement>) {
+    if (!drag.current) return;
+    const dx = e.clientX - drag.current.startClientX;
+    const dy = e.clientY - drag.current.startClientY;
+    if (!drag.current.moved && Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+    drag.current.moved = true;
+    const BUBBLE = 56;
+    const newX = Math.max(8, Math.min(window.innerWidth - BUBBLE - 8, drag.current.startBubbleX + dx));
+    const newY = Math.max(8, Math.min(window.innerHeight - BUBBLE - 8, drag.current.startBubbleY + dy));
+    setPos({ x: newX, y: newY });
+  }
+
+  function onPointerUp() {
+    if (!drag.current?.moved) setOpen(true);
+    drag.current = null;
+  }
+
+  const bubbleStyle: React.CSSProperties = pos
+    ? { left: pos.x, top: pos.y, right: "auto", bottom: "auto" }
+    : { right: "20px", bottom: "calc(env(safe-area-inset-bottom, 0px) + 116px)" };
 
   return (
     <>
@@ -28,18 +68,15 @@ export function AssistantBubble({
       <button
         type="button"
         aria-label="Open Astrabody assistant"
-        onClick={() => setOpen(true)}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
         className="astra-bubble"
         data-pulse={pulse ? "1" : "0"}
-        style={{
-          right: "20px",
-          bottom: "calc(env(safe-area-inset-bottom, 0px) + 116px)",
-        }}
+        style={bubbleStyle}
       >
         <span className="astra-bubble__glow" aria-hidden />
-        <span className="astra-bubble__icon" aria-hidden>
-          ✦
-        </span>
+        <span className="astra-bubble__icon" aria-hidden>✦</span>
         {hasUnread && <span className="astra-bubble__badge" aria-hidden />}
       </button>
 

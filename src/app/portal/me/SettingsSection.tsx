@@ -247,13 +247,14 @@ function Toggle({
       onClick={onChange}
       disabled={disabled}
       className={cn(
-        "relative h-7 w-12 flex-shrink-0 rounded-full border-[0.5px] transition-colors duration-200 ease-ios disabled:opacity-50",
-        checked ? "border-transparent bg-sage" : "border-hairline-strong bg-cream-deep"
+        "relative h-[31px] w-[51px] flex-shrink-0 overflow-hidden rounded-full transition-colors duration-200 ease-ios disabled:opacity-40",
+        checked ? "bg-sage" : "bg-[#DDD8D0]"
       )}
     >
       <span
         className={cn(
-          "absolute top-[2px] h-6 w-6 rounded-full bg-white shadow-1 transition-transform duration-200 ease-ios",
+          "absolute top-[2px] h-[27px] w-[27px] rounded-full bg-white transition-transform duration-200 ease-ios",
+          "shadow-[0_2px_5px_rgba(0,0,0,0.20)]",
           checked ? "translate-x-[22px]" : "translate-x-[2px]"
         )}
       />
