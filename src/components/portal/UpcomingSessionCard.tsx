@@ -43,7 +43,7 @@ export function UpcomingSessionCard({
   });
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!menuOpen) return;
     function onDocClick(e: MouseEvent) {

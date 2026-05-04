@@ -44,7 +44,7 @@ export function EditStaffSheet({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const fileRef = useRef<HTMLInputElement | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   // Sheet content is keyed by staff?.id so reopening for a different
   // staff resets all the local form state cleanly.
@@ -84,7 +84,7 @@ function Editor({
   staff: StaffShape;
   serviceNames: string[];
   canEditCommission: boolean;
-  fileRef: React.RefObject<HTMLInputElement | null>;
+  fileRef: React.RefObject<HTMLInputElement>;
   onSaved: () => void;
 }) {
   const [bio, setBio] = useState(staff.bio_short ?? "");

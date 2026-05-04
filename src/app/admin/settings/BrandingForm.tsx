@@ -55,7 +55,7 @@ export function BrandingForm({
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
-  const fileRef = useRef<HTMLInputElement | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   // Pick the font pair that matches the current selections (or
   // "custom" if the heading/body are mismatched after a manual pick

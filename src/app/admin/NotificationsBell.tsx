@@ -50,7 +50,7 @@ export function NotificationsBell({
   const [open, setOpen] = useState(false);
   const [list, setList] = useState<NotificationItem[]>(initial);
   const [pending, startTransition] = useTransition();
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Keep local list synced when server data changes (parent re-renders
   // after a navigation revalidation).

@@ -28,7 +28,7 @@ export function InboxClient({
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const scrollAnchorRef = useRef<HTMLDivElement | null>(null);
+  const scrollAnchorRef = useRef<HTMLDivElement>(null);
 
   // Reset state when the active thread changes.
   useEffect(() => {

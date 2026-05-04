@@ -32,7 +32,7 @@ export function ChatClient({ threadId, initialMessages, staffActiveAtLoad }: Pro
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
 
-  const scrollAnchorRef = useRef<HTMLDivElement | null>(null);
+  const scrollAnchorRef = useRef<HTMLDivElement>(null);
 
   // Mark every staff/bot message as read on first paint.
   useEffect(() => {

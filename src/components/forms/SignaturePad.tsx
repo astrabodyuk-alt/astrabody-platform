@@ -17,7 +17,7 @@ export function SignaturePad({
   onChange: (dataUrl: string | null) => void;
   ariaLabel: string;
 }) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
   const [hasStrokes, setHasStrokes] = useState<boolean>(!!value);

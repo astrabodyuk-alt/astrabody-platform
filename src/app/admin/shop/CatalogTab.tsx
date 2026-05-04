@@ -162,8 +162,8 @@ function ProductEditor({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
-  const coverRef = useRef<HTMLInputElement | null>(null);
-  const assetRef = useRef<HTMLInputElement | null>(null);
+  const coverRef = useRef<HTMLInputElement>(null);
+  const assetRef = useRef<HTMLInputElement>(null);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingAsset, setUploadingAsset] = useState(false);
 
