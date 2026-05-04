@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Astrabody — Design Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream:        #F6F3EE;
+    --cream-deep:   #EFEAE2;
+    --sand:         #DED2C3;
+    --sage:         #758564;
+    --sage-deep:    #5C6B4E;
+    --sage-light:   #BBC4AA;
+    --olive:        #3E3E31;
+    --olive-soft:   rgba(62,62,49,0.62);
+    --olive-faint:  rgba(62,62,49,0.42);
+    --hairline:     rgba(62,62,49,0.08);
+    --hairline-2:   rgba(62,62,49,0.14);
+    --gold:         #B8945A;
+    --gold-soft:    #E5D2A8;
+    --shadow-1:     0 1px 2px rgba(62,62,49,0.05);
+    --shadow-2:     0 1px 2px rgba(62,62,49,0.05), 0 8px 24px rgba(62,62,49,0.07);
+    --shadow-3:     0 1px 2px rgba(62,62,49,0.06), 0 4px 12px rgba(62,62,49,0.06), 0 24px 64px rgba(62,62,49,0.10);
+    --shadow-card:  0 0.5px 1px rgba(62,62,49,0.06), 0 4px 18px rgba(62,62,49,0.06);
+  }
+
+  * { box-sizing: border-box; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+    background: var(--cream);
+    color: var(--olive);
+    min-height: 100vh;
+    padding: 48px 24px;
+  }
+
+  .stage {
+    max-width: 1240px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 64px;
+    align-items: start;
+  }
+
+  @media (max-width: 880px) {
+    .stage { grid-template-columns: 1fr; gap: 32px; }
+    body { padding: 24px 12px; }
+  }
+
+  /* =========================
+     LEFT: phone frame
+     ========================= */
+
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+
+  .phone {
+    width: 380px;
+    height: 800px;
+    background: linear-gradient(180deg, var(--cream) 0%, var(--cream-deep) 100%);
+    border-radius: 56px;
+    padding: 14px;
+    box-shadow:
+      0 0 0 2px rgba(62,62,49,0.08),
+      0 4px 24px rgba(62,62,49,0.10),
+      0 32px 80px rgba(62,62,49,0.16);
+    position: relative;
+  }
+
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    background: var(--cream);
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .phone-notch {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 28px;
+    background: rgba(62,62,49,0.96);
+    border-radius: 18px;
+    z-index: 50;
+  }
+
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 30px 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--olive);
+    letter-spacing: -0.01em;
+  }
+
+  .status-bar .right { display: flex; gap: 6px; align-items: center; }
+
+  /* App header */
+  .app-header {
+    padding: 16px 24px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .app-header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 500;
+    font-size: 26px;
+    margin: 0;
+    letter-spacing: -0.01em;
+    color: var(--olive);
+  }
+  .app-header h1 .you { color: var(--olive-soft); font-weight: 400; }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 500; color: var(--cream);
+    letter-spacing: 0.02em;
+  }
+
+  .app-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 16px 100px;
+  }
+  .app-content::-webkit-scrollbar { display: none; }
+
+  /* Loyalty hero card */
+  .loyalty-card {
+    position: relative;
+    background: linear-gradient(165deg, #2F3829 0%, #5C6B4E 60%, #758564 100%);
+    color: var(--cream);
+    border-radius: 28px;
+    padding: 22px;
+    margin: 8px 0 16px;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.10),
+      0 1px 2px rgba(62,62,49,0.10),
+      0 18px 40px rgba(62,62,49,0.18);
+    overflow: hidden;
+  }
+
+  .loyalty-card::before {
+    content: "";
+    position: absolute;
+    top: -40%; right: -25%;
+    width: 280px; height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(255,255,255,0.10), transparent);
+    pointer-events: none;
+  }
+  .loyalty-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(120% 70% at 0% 100%, rgba(187,196,170,0.12), transparent 60%);
+    pointer-events: none;
+  }
+
+  .tier-row {
+    display: flex; justify-content: space-between; align-items: center;
+    position: relative; z-index: 1;
+  }
+  .tier-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px;
+    background: rgba(255,255,255,0.10);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 0.5px solid rgba(255,255,255,0.16);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .tier-badge .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--gold-soft);
+    box-shadow: 0 0 8px rgba(229,210,168,0.7);
+  }
+  .tier-meta {
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(246,243,238,0.72);
+    letter-spacing: 0.02em;
+  }
+
+  .points-display {
+    margin: 28px 0 18px;
+    position: relative; z-index: 1;
+  }
+  .points-display .label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(246,243,238,0.66);
+    margin-bottom: 4px;
+  }
+  .points-display .number {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 56px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .points-display .number .pts {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(246,243,238,0.66);
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .progress-bar {
+    height: 4px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative; z-index: 1;
+  }
+  .progress-bar .fill {
+    height: 100%;
+    width: 81%;
+    background: linear-gradient(90deg, var(--sage-light), var(--gold-soft));
+    border-radius: 999px;
+  }
+
+  .next-reward {
+    margin-top: 10px;
+    font-size: 13px;
+    color: rgba(246,243,238,0.84);
+    letter-spacing: -0.005em;
+    position: relative; z-index: 1;
+  }
+  .next-reward strong { color: var(--cream); font-weight: 500; }
+
+  /* Section header */
+  .section-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin: 28px 4px 14px;
+  }
+  .section-head h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 500;
+    font-size: 22px;
+    margin: 0;
+    letter-spacing: -0.01em;
+    color: var(--olive);
+  }
+  .section-head a {
+    font-size: 13px;
+    color: var(--sage-deep);
+    text-decoration: none;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+
+  /* Upcoming session card */
+  .upcoming-card {
+    background: #FFFFFF;
+    border: 0.5px solid var(--hairline);
+    border-radius: 22px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow-card);
+  }
+  .upcoming-row {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .upcoming-date {
+    width: 56px; flex-shrink: 0;
+    background: var(--cream-deep);
+    border-radius: 14px;
+    padding: 8px 0;
+    text-align: center;
+  }
+  .upcoming-date .day {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px; line-height: 1;
+    color: var(--olive);
+    font-weight: 500;
+  }
+  .upcoming-date .month {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: var(--olive-soft);
+    text-transform: uppercase;
+    margin-top: 4px;
+    font-weight: 500;
+  }
+  .upcoming-info { flex: 1; }
+  .upcoming-info .service {
+    font-size: 15px; font-weight: 500;
+    color: var(--olive);
+    letter-spacing: -0.01em;
+  }
+  .upcoming-info .meta {
+    font-size: 13px;
+    color: var(--olive-soft);
+    margin-top: 3px;
+    letter-spacing: -0.005em;
+  }
+  .upcoming-cta {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--cream-deep);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    color: var(--olive);
+  }
+
+  /* Progress preview */
+  .progress-card {
+    background: #FFFFFF;
+    border: 0.5px solid var(--hairline);
+    border-radius: 22px;
+    padding: 18px 20px 14px;
+    box-shadow: var(--shadow-card);
+  }
+  .progress-stat-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 16px;
+  }
+  .progress-stat .number {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 500;
+    font-size: 32px; line-height: 1;
+    color: var(--sage-deep);
+    letter-spacing: -0.02em;
+  }
+  .progress-stat .number .delta {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--sage);
+    margin-left: 4px;
+    font-weight: 500;
+  }
+  .progress-stat .label {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--olive-soft);
+    margin-top: 4px;
+    font-weight: 500;
+  }
+
+  .spark { width: 100%; height: 60px; }
+
+  /* Flash slot */
+  .flash-card {
+    background: #FFFFFF;
+    border: 0.5px solid var(--hairline);
+    border-radius: 22px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow-card);
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 10px;
+  }
+  .flash-time {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    color: var(--olive);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    width: 60px;
+    flex-shrink: 0;
+  }
+  .flash-info { flex: 1; }
+  .flash-info .title { font-size: 14px; font-weight: 500; color: var(--olive); }
+  .flash-info .meta { font-size: 12px; color: var(--olive-soft); margin-top: 2px; }
+  .flash-price {
+    text-align: right; flex-shrink: 0;
+  }
+  .flash-price .now {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    color: var(--sage-deep);
+    font-weight: 500;
+  }
+  .flash-price .was {
+    font-size: 11px;
+    color: var(--olive-faint);
+    text-decoration: line-through;
+    margin-top: 1px;
+  }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 86px;
+    background: rgba(246,243,238,0.78);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-top: 0.5px solid var(--hairline);
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    padding: 12px 8px 0;
+    z-index: 40;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--olive-faint);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    flex: 1;
+  }
+  .nav-item.active { color: var(--sage-deep); }
+  .nav-icon {
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    color: inherit;
+  }
+
+  .phone-caption {
+    font-size: 12px;
+    color: var(--olive-soft);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  /* =========================
+     RIGHT: design system spec
+     ========================= */
+
+  .spec-pane {
+    padding-top: 12px;
+  }
+
+  .spec-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--sage);
+    font-weight: 500;
+    margin-bottom: 14px;
+  }
+
+  .spec-pane h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 56px;
+    line-height: 1.05;
+    margin: 0 0 18px;
+    color: var(--olive);
+    letter-spacing: -0.02em;
+  }
+  .spec-pane h1 em {
+    font-style: italic;
+    color: var(--sage);
+  }
+
+  .spec-lede {
+    font-size: 17px;
+    line-height: 1.55;
+    color: var(--olive-soft);
+    max-width: 540px;
+    margin-bottom: 36px;
+    font-weight: 400;
+    letter-spacing: -0.005em;
+  }
+
+  .spec-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 36px;
+  }
+
+  .spec-card {
+    background: #FFFFFF;
+    border: 0.5px solid var(--hairline);
+    border-radius: 22px;
+    padding: 22px 24px;
+    box-shadow: var(--shadow-card);
+  }
+
+  .spec-card h3 {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--olive-soft);
+    font-weight: 500;
+    margin: 0 0 16px;
+  }
+
+  /* Palette swatches */
+  .palette-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .swatch {
+    flex: 1;
+    aspect-ratio: 1 / 1.4;
+    border-radius: 14px;
+    display: flex; flex-direction: column;
+    justify-content: flex-end;
+    padding: 10px;
+    box-shadow: inset 0 0 0 0.5px var(--hairline);
+  }
+  .swatch .name {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+  .swatch .hex {
+    font-size: 10px;
+    font-family: 'SF Mono', ui-monospace, monospace;
+    margin-top: 2px;
+    opacity: 0.7;
+  }
+
+  .sw-cream    { background: var(--cream);     color: var(--olive); }
+  .sw-sand     { background: var(--sand);      color: var(--olive); }
+  .sw-sage     { background: var(--sage);      color: var(--cream); }
+  .sw-sage-d   { background: var(--sage-deep); color: var(--cream); }
+  .sw-olive    { background: var(--olive);     color: var(--cream); }
+
+  /* Type spec */
+  .type-row { padding: 8px 0; border-top: 0.5px solid var(--hairline); }
+  .type-row:first-child { border-top: 0; }
+  .type-row .label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--olive-faint);
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .type-display-1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 38px; font-weight: 400; line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--olive);
+  }
+  .type-display-2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px; font-weight: 500; line-height: 1.1;
+    letter-spacing: -0.01em;
+    color: var(--olive);
+  }
+  .type-body {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px; font-weight: 400; line-height: 1.55;
+    color: var(--olive);
+    letter-spacing: -0.005em;
+  }
+  .type-meta {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px; font-weight: 500; line-height: 1;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--olive-soft);
+  }
+
+  /* Components row */
+  .components {
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 22px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    border: 0;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+  }
+  .btn-primary {
+    background: var(--olive);
+    color: var(--cream);
+    box-shadow: 0 1px 2px rgba(62,62,49,0.10), 0 8px 20px rgba(62,62,49,0.12);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 1px 2px rgba(62,62,49,0.10), 0 14px 28px rgba(62,62,49,0.16); }
+  .btn-secondary {
+    background: #FFFFFF;
+    color: var(--olive);
+    border: 0.5px solid var(--hairline-2);
+    box-shadow: var(--shadow-1);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--sage-deep);
+    padding: 12px 18px;
+  }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: var(--cream-deep);
+    color: var(--olive);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+  .pill .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--sage);
+  }
+  .pill-gold {
+    background: rgba(184,148,90,0.10);
+    color: var(--gold);
+  }
+  .pill-gold .dot { background: var(--gold); }
+
+  /* Principles list */
+  .principles { list-style: none; padding: 0; margin: 0; }
+  .principle {
+    display: flex; gap: 16px;
+    padding: 16px 0;
+    border-top: 0.5px solid var(--hairline);
+  }
+  .principle:first-child { border-top: 0; }
+  .principle .num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    color: var(--sage);
+    line-height: 1.1;
+    width: 28px;
+    flex-shrink: 0;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .principle .body { font-size: 14px; line-height: 1.55; color: var(--olive); }
+  .principle .body strong { font-weight: 500; }
+  .principle .body span { color: var(--olive-soft); }
+
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <!-- ============== PHONE MOCKUP ============== -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="phone-notch"></div>
+
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="right">
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M8 0a7 7 0 0 1 5 2L8 7 3 2a7 7 0 0 1 5-2zM4.5 4.5L8 8 11.5 4.5l1 1L8 10 3.5 5.5l1-1z"/></svg>
+            <svg width="14" height="11" viewBox="0 0 14 11" fill="currentColor"><rect width="14" height="11" rx="2"/></svg>
+            <span style="font-size:12px;">100%</span>
+          </span>
+        </div>
+
+        <div class="app-header">
+          <h1>Good morning, <span class="you">Sarah</span></h1>
+          <div class="avatar">SR</div>
+        </div>
+
+        <div class="app-content">
+
+          <!-- LOYALTY HERO -->
+          <div class="loyalty-card">
+            <div class="tier-row">
+              <span class="tier-badge"><span class="dot"></span>Insider</span>
+              <span class="tier-meta">Joined March 2026</span>
+            </div>
+
+            <div class="points-display">
+              <div class="label">Inner Circle balance</div>
+              <div class="number">2,840<span class="pts">pts</span></div>
+            </div>
+
+            <div class="progress-bar"><div class="fill"></div></div>
+            <div class="next-reward">
+              <strong>660 points</strong> to your next free InfraBike session.
+            </div>
+          </div>
+
+          <!-- UPCOMING -->
+          <div class="section-head">
+            <h2>Your next session</h2>
+            <a href="#">Reschedule</a>
+          </div>
+          <div class="upcoming-card">
+            <div class="upcoming-row">
+              <div class="upcoming-date">
+                <div class="day">29</div>
+                <div class="month">Apr</div>
+              </div>
+              <div class="upcoming-info">
+                <div class="service">Fat Freezing — abdomen</div>
+                <div class="meta">3:30 pm with Tove · 45 min</div>
+              </div>
+              <div class="upcoming-cta">›</div>
+            </div>
+          </div>
+
+          <!-- PROGRESS -->
+          <div class="section-head">
+            <h2>Your progress</h2>
+            <a href="#">Add a note</a>
+          </div>
+          <div class="progress-card">
+            <div class="progress-stat-row">
+              <div class="progress-stat">
+                <div class="number">−4.2<span class="delta"> cm</span></div>
+                <div class="label">Waist · 8 weeks</div>
+              </div>
+              <div class="progress-stat" style="text-align:right;">
+                <div class="number">7<span class="delta"> sessions</span></div>
+                <div class="label">Since March</div>
+              </div>
+            </div>
+            <svg class="spark" viewBox="0 0 320 60" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#758564" stop-opacity="0.16"/>
+                  <stop offset="100%" stop-color="#758564" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,46 C30,42 50,38 70,36 C100,32 120,28 150,24 C180,20 200,18 230,15 C260,12 280,10 320,7 L320,60 L0,60 Z" fill="url(#g1)"/>
+              <path d="M0,46 C30,42 50,38 70,36 C100,32 120,28 150,24 C180,20 200,18 230,15 C260,12 280,10 320,7" fill="none" stroke="#5C6B4E" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="320" cy="7" r="3" fill="#5C6B4E"/>
+            </svg>
+          </div>
+
+          <!-- FLASH SLOTS -->
+          <div class="section-head">
+            <h2>Today's flash slots</h2>
+            <a href="#">See all</a>
+          </div>
+
+          <div class="flash-card">
+            <div class="flash-time">11:30</div>
+            <div class="flash-info">
+              <div class="title">InfraBike</div>
+              <div class="meta">30 min · with Jade</div>
+            </div>
+            <div class="flash-price">
+              <div class="now">£29</div>
+              <div class="was">£39</div>
+            </div>
+          </div>
+
+          <div class="flash-card">
+            <div class="flash-time">14:00</div>
+            <div class="flash-info">
+              <div class="title">EMS SupraSculpt</div>
+              <div class="meta">30 min · with Tove</div>
+            </div>
+            <div class="flash-price">
+              <div class="now">£64</div>
+              <div class="was">£80</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- BOTTOM NAV -->
+        <div class="bottom-nav">
+          <div class="nav-item active">
+            <div class="nav-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12L12 4l9 8v8a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z" stroke-linejoin="round" fill="currentColor" fill-opacity="0.06"/></svg>
+            </div>
+            <span>Home</span>
+          </div>
+          <div class="nav-item">
+            <div class="nav-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
+            </div>
+            <span>Book</span>
+          </div>
+          <div class="nav-item">
+            <div class="nav-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15a4 4 0 0 1-4 4H8l-5 4V6a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
+            </div>
+            <span>Chat</span>
+          </div>
+          <div class="nav-item">
+            <div class="nav-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            </div>
+            <span>You</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="phone-caption">Client portal · iPhone PWA</div>
+  </div>
+
+  <!-- ============== DESIGN SYSTEM SPEC ============== -->
+  <div class="spec-pane">
+
+    <div class="spec-eyebrow">Astrabody Platform · Design Preview</div>
+
+    <h1>The quiet luxury<br/>of <em>showing up</em><br/>for yourself.</h1>
+
+    <p class="spec-lede">
+      A premium PWA that lives on your client's home screen.
+      Editorial typography, generous whitespace, layered shadows, and
+      a warm sage&nbsp;/&nbsp;cream palette that mirrors the studio itself.
+      Inspired by Apple's restraint and Aesop's editorial poise.
+    </p>
+
+    <div class="spec-grid">
+
+      <div class="spec-card">
+        <h3>Palette</h3>
+        <div class="palette-row">
+          <div class="swatch sw-cream"><div class="name">Cream</div><div class="hex">#F6F3EE</div></div>
+          <div class="swatch sw-sand"><div class="name">Sand</div><div class="hex">#DED2C3</div></div>
+          <div class="swatch sw-sage"><div class="name">Sage</div><div class="hex">#758564</div></div>
+          <div class="swatch sw-sage-d"><div class="name">Sage&nbsp;deep</div><div class="hex">#5C6B4E</div></div>
+          <div class="swatch sw-olive"><div class="name">Olive</div><div class="hex">#3E3E31</div></div>
+        </div>
+        <div style="font-size:12px;color:var(--olive-soft);line-height:1.55;letter-spacing:-0.005em;">
+          Cream as canvas, sage as voice, olive as text. No pure black, no pure white. Warmth carried into every surface.
+        </div>
+      </div>
+
+      <div class="spec-card">
+        <h3>Typography</h3>
+        <div class="type-row">
+          <div class="label">Display · Cormorant Garamond</div>
+          <div class="type-display-1">Sculpt. Refine.</div>
+        </div>
+        <div class="type-row">
+          <div class="label">Heading · Cormorant 500</div>
+          <div class="type-display-2">Your next session</div>
+        </div>
+        <div class="type-row">
+          <div class="label">Body · Inter 400</div>
+          <div class="type-body">A private sanctuary, designed entirely around you.</div>
+        </div>
+        <div class="type-row">
+          <div class="label">Meta · Inter 500</div>
+          <div class="type-meta">Inner Circle balance</div>
+        </div>
+      </div>
+
+      <div class="spec-card">
+        <h3>Components</h3>
+        <div class="components">
+          <button class="btn btn-primary">Book a session</button>
+          <button class="btn btn-secondary">Reschedule</button>
+          <button class="btn btn-ghost">See all rewards →</button>
+        </div>
+        <div class="components" style="margin-top:14px;">
+          <span class="pill"><span class="dot"></span>Confirmed</span>
+          <span class="pill pill-gold"><span class="dot"></span>Inner Circle</span>
+          <span class="pill"><span class="dot"></span>+390 pts earned</span>
+        </div>
+      </div>
+
+      <div class="spec-card">
+        <h3>Principles</h3>
+        <ul class="principles">
+          <li class="principle">
+            <span class="num">01</span>
+            <div class="body"><strong>Calm over loud.</strong> <span>Generous whitespace, hairline borders, no shouting type.</span></div>
+          </li>
+          <li class="principle">
+            <span class="num">02</span>
+            <div class="body"><strong>Editorial soul.</strong> <span>A serif headline, a number set in Cormorant. It breathes.</span></div>
+          </li>
+          <li class="principle">
+            <span class="num">03</span>
+            <div class="body"><strong>Materiality.</strong> <span>Layered soft shadows, glass on dark cards, never flat plastic.</span></div>
+          </li>
+          <li class="principle">
+            <span class="num">04</span>
+            <div class="body"><strong>Premium restraint.</strong> <span>One emoji never. Two weights only. One accent at a time.</span></div>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

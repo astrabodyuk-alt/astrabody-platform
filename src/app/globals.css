@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Astrabody Platform — globals.css
+ *
+ * Maps Astrabody brand tokens onto the standard shadcn/ui semantic
+ * variables. This is what makes any component pulled from shadcn or
+ * 21st.dev automatically wear our colours.
+ *
+ * Values are HSL triplets (no `hsl(...)` wrapper) — that's the format
+ * shadcn expects.
+ */
+
+@layer base {
+  :root {
+    /* ---- Astrabody → shadcn token map ---- */
+
+    /* cream #F6F3EE  */
+    --background: 36 26% 95%;
+    /* olive  #3E3E31 */
+    --foreground: 60 13% 22%;
+
+    /* white surface for cards */
+    --card: 0 0% 100%;
+    --card-foreground: 60 13% 22%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 60 13% 22%;
+
+    /* sage #758564 — primary brand */
+    --primary: 92 14% 46%;
+    --primary-foreground: 36 26% 95%; /* cream */
+
+    /* cream-deep #EFEAE2 — secondary surface */
+    --secondary: 36 22% 91%;
+    --secondary-foreground: 60 13% 22%;
+
+    /* muted = cream-deep with olive-soft text */
+    --muted: 36 22% 91%;
+    --muted-foreground: 60 6% 38%;
+
+    /* accent = sage-light #BBC4AA */
+    --accent: 80 17% 72%;
+    --accent-foreground: 60 13% 22%;
+
+    /* destructive = soft red, never fire engine */
+    --destructive: 0 56% 60%;
+    --destructive-foreground: 36 26% 95%;
+
+    /* hairline @ 8% alpha — we approximate with a light olive */
+    --border: 60 6% 86%;
+    --input:  60 6% 86%;
+
+    /* sage @ 0.4 alpha for focus ring */
+    --ring: 92 14% 46%;
+
+    --radius: 0.75rem; /* 12 px — base; cards override to 22 px in component code */
+  }
+}
+
+/*
+ * Page-level base: cream background, olive body text, Inter as the
+ * default sans, soft-rendered text on macOS for the Apple feel.
+ */
+@layer base {
+  html, body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  body {
+    font-family: var(--font-inter), Inter, system-ui, -apple-system,
+      BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "ss01" on, "cv11" on;
+    letter-spacing: -0.005em;
+  }
+
+  /* Numerals on screens are tabular by default — like Apple Wallet. */
+  body, button, input, select, textarea, table {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Editorial display family for serif moments. */
+  .font-serif {
+    font-family: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+    font-feature-settings: "lnum" on, "tnum" on;
+  }
+
+  /* Apple rule: only show focus ring on keyboard navigation. */
+  *:focus { outline: none; }
+  *:focus-visible {
+    outline: 2px solid rgba(117, 133, 100, 0.5); /* sage @ 0.5 alpha */
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Respect users who reduce motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+/*
+ * Component primitives — small abstractions used across pages.
+ * Anything more complex lives in src/components/.
+ */
+@layer components {
+
+  /* Standard surface card — cream canvas, white surface, hairline. */
+  .ax-card {
+    @apply rounded-lg bg-white shadow-2 transition-all duration-200 ease-ios;
+    border: 0.5px solid hsl(var(--border));
+  }
+  .ax-card-hover {
+    @apply hover:shadow-3 hover:-translate-y-px;
+  }
+
+  /* Section headline — Cormorant 22 px, olive, tight tracking. */
+  .ax-section-title {
+    @apply font-serif text-[22px] font-medium tracking-tight text-olive;
+  }
+
+  /* Eyebrow / all-caps label — Inter 11 px, olive-soft, 16% tracking. */
+  .ax-label {
+    @apply text-[11px] font-medium uppercase tracking-label-caps text-olive-soft;
+  }
+
+  /* Editorial big number — used for the loyalty balance, stat cards, hero pages. */
+  .ax-display {
+    @apply font-serif font-normal tracking-tightest text-olive;
+  }
+
+  /* Apple-style tap response on interactive surfaces. */
+  .ax-tap {
+    @apply transition-transform duration-120 ease-ios active:scale-[0.97];
+  }
+
+  /* Glass surface — bottom nav, sticky header. */
+  .ax-glass {
+    background: rgba(246, 243, 238, 0.78);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+    border-top: 0.5px solid hsl(var(--border));
+  }
+}
