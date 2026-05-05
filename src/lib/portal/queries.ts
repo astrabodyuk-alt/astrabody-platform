@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { fromZonedTime } from "date-fns-tz";
 import { createServerSupabase } from "@/lib/supabase/server";
 import type { LoyaltyTier } from "@/lib/utils";
@@ -25,7 +26,11 @@ export interface CurrentClient {
   tenant_id: string;
 }
 
-export async function getCurrentClient(): Promise<CurrentClient> {
+/**
+ * Cached per-request via React.cache — safe to call from both layout and
+ * page without triggering duplicate auth + DB round-trips.
+ */
+export const getCurrentClient = cache(async (): Promise<CurrentClient> => {
   const supabase = await createServerSupabase();
   const {
     data: { user },
@@ -51,7 +56,7 @@ export async function getCurrentClient(): Promise<CurrentClient> {
     firstName: deriveFirstName(fullName, user.email ?? ""),
     initials: deriveInitials(fullName, user.email ?? ""),
   };
-}
+});
 
 // ============================================================
 // 2. getLoyaltyAccount
@@ -69,13 +74,21 @@ export async function getLoyaltyAccount(
   clientId: string
 ): Promise<LoyaltyView> {
   const supabase = await createServerSupabase();
-  await assertSession(supabase);
 
-  const { data: account, error } = await supabase
-    .from("loyalty_accounts")
-    .select("tier, current_points, lifetime_points, created_at, tenant_id")
-    .eq("client_id", clientId)
-    .maybeSingle();
+  // Fetch loyalty_accounts and the portal link fallback in parallel —
+  // the link is only used if loyalty_accounts has no tenant_id yet.
+  const [{ data: account, error }, { data: link }] = await Promise.all([
+    supabase
+      .from("loyalty_accounts")
+      .select("tier, current_points, lifetime_points, created_at, tenant_id")
+      .eq("client_id", clientId)
+      .maybeSingle(),
+    supabase
+      .from("client_portal_links")
+      .select("tenant_id")
+      .eq("client_id", clientId)
+      .maybeSingle(),
+  ]);
 
   if (error) throw error;
 
@@ -85,18 +98,9 @@ export async function getLoyaltyAccount(
   const createdAt = (account?.created_at as string | undefined) ?? new Date().toISOString();
   const memberSince = formatMonthYear(createdAt);
 
-  // A brand-new client may not have a loyalty_accounts row yet (the trigger
-  // only fires after the first ledger entry). In that case fall back to the
-  // portal link to pick up the tenant_id.
-  let tenantId = account?.tenant_id as string | undefined;
-  if (!tenantId) {
-    const { data: link } = await supabase
-      .from("client_portal_links")
-      .select("tenant_id")
-      .eq("client_id", clientId)
-      .maybeSingle();
-    tenantId = link?.tenant_id as string | undefined;
-  }
+  const tenantId =
+    (account?.tenant_id as string | undefined) ??
+    (link?.tenant_id as string | undefined);
 
   let nextReward: LoyaltyView["nextReward"];
   if (tenantId) {
@@ -140,7 +144,6 @@ export async function getNextBooking(
   clientId: string
 ): Promise<NextBookingView | null> {
   const supabase = await createServerSupabase();
-  await assertSession(supabase);
 
   const { data: dataRaw, error } = await supabase
     .from("bookings")
@@ -226,7 +229,6 @@ export async function getProgressSeries(
   clientId: string
 ): Promise<ProgressView | null> {
   const supabase = await createServerSupabase();
-  await assertSession(supabase);
 
   const { data, error } = await supabase
     .from("session_logs")
@@ -298,7 +300,6 @@ export async function getTodayFlashSlots(
   tenantId: string
 ): Promise<FlashSlotView[]> {
   const supabase = await createServerSupabase();
-  await assertSession(supabase);
 
   // V1 hard-codes Europe/London (Astrabody's tz). When we onboard tenants
   // outside the UK, swap this for a lookup against tenants.timezone.

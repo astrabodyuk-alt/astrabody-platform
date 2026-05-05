@@ -3,18 +3,15 @@ import { PortalTopBar } from "@/components/portal/PortalTopBar";
 import { AssistantBubble } from "@/components/portal/AssistantBubble";
 import { PortalServiceWorkerRegistry } from "./PortalServiceWorkerRegistry";
 import { InstallBanner } from "./InstallBanner";
-import { createServerSupabase } from "@/lib/supabase/server";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { countActiveProductsForTenant } from "@/lib/shop/queries";
+import { getCurrentClient } from "@/lib/portal/queries";
 
 /**
  * Portal shell — wraps every /portal/* route. Mobile-first PWA layout.
  *
- * Structure:
- *   - PortalTopBar: sticky top header with Astrabody wordmark + hamburger
- *   - main: page content, padded below the bottom nav
- *   - BottomNav: glass bottom navigation (Home / Book / Chat / Shop / You)
- *   - AssistantBubble: floating AI assistant (authed only)
+ * getCurrentClient() is React.cache-wrapped, so calling it here AND in
+ * the page does not trigger duplicate auth / DB round-trips.
  */
 export default async function PortalLayout({
   children,
@@ -27,44 +24,26 @@ export default async function PortalLayout({
   let clientFirstName: string | undefined;
 
   try {
-    const supabase = await createServerSupabase();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      isAuthed = true;
-      const admin = createAdminSupabase();
-      const { data: link } = await admin
-        .from("client_portal_links")
-        .select("client_id, clients (tenant_id, first_name)")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      type Embed =
-        | { tenant_id: string; first_name: string | null }
-        | { tenant_id: string; first_name: string | null }[]
-        | null;
-      const e = (link?.clients ?? null) as Embed;
-      const clientData = Array.isArray(e) ? e[0] : e;
-      const tenantId = clientData?.tenant_id;
-      const clientId = link?.client_id as string | undefined;
-      clientFirstName = clientData?.first_name ?? undefined;
+    const me = await getCurrentClient();
+    isAuthed = true;
+    clientFirstName = me.firstName;
 
-      if (tenantId) {
-        const count = await countActiveProductsForTenant(tenantId);
-        showShop = count > 0;
-      }
-      if (clientId) {
-        // Cheap unread chat probe — drives the red dot on the bubble.
-        const { data: threads } = await admin
-          .from("chat_threads")
-          .select("unread_count_client")
-          .eq("client_id", clientId);
-        hasUnreadInbox = (
-          (threads ?? []) as Array<{ unread_count_client: number }>
-        ).some((t) => (t.unread_count_client ?? 0) > 0);
-      }
-    }
+    // Run shop-count and unread-threads in parallel — neither depends on the other.
+    const admin = createAdminSupabase();
+    const [shopCount, threadsResult] = await Promise.all([
+      countActiveProductsForTenant(me.tenant_id),
+      admin
+        .from("chat_threads")
+        .select("unread_count_client")
+        .eq("client_id", me.id),
+    ]);
+
+    showShop = shopCount > 0;
+    hasUnreadInbox = (
+      (threadsResult.data ?? []) as Array<{ unread_count_client: number }>
+    ).some((t) => (t.unread_count_client ?? 0) > 0);
   } catch {
+    // Not authenticated or DB error — render the shell without auth-gated UI.
     showShop = false;
   }
 
