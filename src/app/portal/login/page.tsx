@@ -25,6 +25,15 @@ export default function PortalLoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
 
+  // If the client already has a valid session, skip the login form entirely.
+  useEffect(() => {
+    createBrowserSupabase()
+      .auth.getSession()
+      .then(({ data }) => {
+        if (data.session) window.location.replace("/portal");
+      });
+  }, []);
+
   // Cooldown countdown for the resend button.
   useEffect(() => {
     if (cooldown <= 0) return;

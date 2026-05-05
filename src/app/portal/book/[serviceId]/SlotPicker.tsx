@@ -9,13 +9,13 @@ import { joinWaitlist, type WaitlistWindow } from "@/lib/waitlist/actions";
 
 /**
  * Client subcomponent for /portal/book/[serviceId]:
- *   - Horizontal scroll strip of the next 14 days
+ *   - Horizontal scroll strip of the next 21 days (max booking window)
  *   - 3-col grid of 30-min slots for the picked day
  *   - Sticky bottom Continue button
  *
  * Slots come from /api/availability per-day; we fetch lazily on tap.
  * V1: every day pill is tappable (no upfront "disabled" state). If a day
- * has no slots, the empty message renders. TODO: pre-fetch all 14 days
+ * has no slots, the empty message renders. TODO: pre-fetch all 21 days
  * in parallel and dim days with no slots — small UX upgrade for later.
  */
 
@@ -34,7 +34,7 @@ interface AvailabilityResponse {
 }
 
 const TZ = "Europe/London";
-const DAYS = 14;
+const DAYS = 21;
 
 export function SlotPicker({
   serviceId,

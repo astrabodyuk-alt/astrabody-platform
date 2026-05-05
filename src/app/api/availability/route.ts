@@ -43,6 +43,24 @@ export async function GET(request: NextRequest): Promise<Response> {
     );
   }
 
+  // Clients may not book more than MAX_BOOKING_DAYS_AHEAD days in advance.
+  const MAX_BOOKING_DAYS_AHEAD = 21;
+  const requestedDate = new Date(`${date}T00:00:00Z`);
+  const todayUTC = new Date();
+  todayUTC.setUTCHours(0, 0, 0, 0);
+  const diffDays = Math.floor(
+    (requestedDate.getTime() - todayUTC.getTime()) / 86_400_000
+  );
+  if (diffDays < 0) {
+    return NextResponse.json({ slots: [], staffId: null, staffName: null });
+  }
+  if (diffDays > MAX_BOOKING_DAYS_AHEAD) {
+    return NextResponse.json(
+      { error: "date too far ahead — max 3 weeks", slots: [] },
+      { status: 400 }
+    );
+  }
+
   const supabase = await createServerSupabase();
   const {
     data: { user },
