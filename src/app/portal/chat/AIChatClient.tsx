@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { Send, Sparkles, Users } from "lucide-react";
+import { Sparkles, Users } from "lucide-react";
+import { ControlledSendIcon } from "@/components/portal/icons/AnimatedIcons";
 import { cn } from "@/lib/utils";
 import { portalAssistantChat } from "@/lib/portal-assistant/actions";
 import {
@@ -51,6 +52,7 @@ export function AIChatClient() {
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [justSent, setJustSent] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -74,6 +76,9 @@ export function AIChatClient() {
     if (!text || pending) return;
     setError(null);
     setDraft("");
+    // Trigger the fly-off animation, reset after 600ms
+    setJustSent(true);
+    setTimeout(() => setJustSent(false), 600);
     const messages = pushUser(text);
     runChat(messages);
   }
@@ -213,7 +218,7 @@ export function AIChatClient() {
           disabled={pending || !draft.trim()}
           className="flex size-11 items-center justify-center rounded-full bg-sage text-cream transition-transform active:scale-95 disabled:opacity-50"
         >
-          <Send size={16} strokeWidth={1.6} />
+          <ControlledSendIcon sent={justSent} size={18} color="currentColor" />
         </button>
       </form>
     </div>

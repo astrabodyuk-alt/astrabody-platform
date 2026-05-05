@@ -199,7 +199,33 @@ export function DownloadDoneIcon({ size = 40, color = "currentColor", className,
   );
 }
 
-/* ─── 9. SEND ─── */
+/* ─── 9b. SEND — controlled (prop-driven, no auto-toggle) ─── */
+export function ControlledSendIcon({
+  sent,
+  size = 40,
+  color = "currentColor",
+  className,
+}: {
+  sent: boolean;
+  size?: number;
+  color?: string;
+  className?: string;
+}) {
+  return (
+    <svg viewBox="0 0 40 40" fill="none" className={cn("", className)} style={{ width: size, height: size }}>
+      <motion.g
+        animate={sent ? { x: 30, y: -30, opacity: 0, scale: 0.5 } : { x: 0, y: 0, opacity: 1, scale: 1 }}
+        transition={{ duration: 0.45, ease: [0.32, 0.72, 0, 1] }}
+      >
+        <path d="M34 6L16 20l-6-2L34 6z" stroke={color} strokeWidth={2} strokeLinejoin="round" />
+        <path d="M34 6L22 34l-6-14" stroke={color} strokeWidth={2} strokeLinejoin="round" />
+        <line x1="16" y1="20" x2="22" y2="34" stroke={color} strokeWidth={2} />
+      </motion.g>
+    </svg>
+  );
+}
+
+/* ─── 9. SEND (auto-toggle demo) ─── */
 export function SendIcon({ size = 40, color = "currentColor", className, duration = 2600 }: StateIconProps) {
   const sent = useAutoToggle(duration);
   return (
