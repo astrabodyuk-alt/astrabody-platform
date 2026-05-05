@@ -43,17 +43,21 @@ export default async function PortalBookPage({
     // to the standard picker so the user isn't stuck.
   }
 
+  // getCurrentClient is React.cache — no extra round-trip.
+  const me = await getCurrentClient().catch(() => null);
+  if (!me) redirect("/portal/login");
+
+  // Run services fetch and "your usual" lookup in parallel.
   let services;
+  let yourUsual = null;
   try {
-    services = await getActiveServicesForCurrentTenant();
+    [services, yourUsual] = await Promise.all([
+      getActiveServicesForCurrentTenant(),
+      pickYourUsual(me.id),
+    ]);
   } catch {
     redirect("/portal/login");
   }
-
-  // "Your usual" — surfaces the most-booked service when the client has
-  // 2+ completed bookings for it, with the last staff they used.
-  const me = await getCurrentClient().catch(() => null);
-  const yourUsual = me ? await pickYourUsual(me.id) : null;
 
   return (
     <div className="px-4 pt-4">

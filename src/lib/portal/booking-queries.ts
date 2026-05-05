@@ -1,5 +1,7 @@
 import "server-only";
+import { unstable_cache } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { getCurrentClient } from "@/lib/portal/queries";
 
 /**
  * Server-side data loaders for the /portal/book flow.
@@ -18,31 +20,33 @@ export interface ServicePickerRow {
 }
 
 export async function getActiveServicesForCurrentTenant(): Promise<ServicePickerRow[]> {
-  const supabase = await createServerSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("no session");
-
-  const { data: link } = await supabase
-    .from("client_portal_links")
-    .select("tenant_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!link?.tenant_id) throw new Error("no portal link");
-
-  const { data, error } = await supabase
-    .from("services")
-    .select(
-      "id, slug, name, duration_min, price_pence, deposit_pence, category, sort_order"
-    )
-    .eq("tenant_id", link.tenant_id as string)
-    .eq("is_bookable", true)
-    .order("sort_order", { ascending: true })
-    .order("name", { ascending: true });
-  if (error) throw error;
-  return (data ?? []) as ServicePickerRow[];
+  // getCurrentClient is React.cache-wrapped — no extra auth/DB call.
+  const me = await getCurrentClient();
+  return fetchServicesForTenant(me.tenant_id);
 }
+
+/**
+ * Services list is server-cached per tenant for 5 minutes.
+ * It rarely changes; no need to hit the DB on every page visit.
+ */
+const fetchServicesForTenant = unstable_cache(
+  async (tenantId: string): Promise<ServicePickerRow[]> => {
+    const supabase = await createServerSupabase();
+    const { data, error } = await supabase
+      .from("services")
+      .select(
+        "id, slug, name, duration_min, price_pence, deposit_pence, category, sort_order"
+      )
+      .eq("tenant_id", tenantId)
+      .eq("is_bookable", true)
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as ServicePickerRow[];
+  },
+  ["portal-services"],
+  { revalidate: 300, tags: ["services"] }
+);
 
 export interface ServiceDetail extends ServicePickerRow {
   description: string | null;
