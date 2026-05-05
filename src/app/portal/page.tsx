@@ -1,21 +1,14 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import {
-  Calendar,
-  ChevronRight,
-  ArrowRight,
-  Star,
-  Zap,
-  Snowflake,
-  Sparkles,
-} from "lucide-react";
+import { Calendar, ChevronRight, ArrowRight, Star } from "lucide-react";
 import { format } from "date-fns";
 import {
   getCurrentClient,
   getLoyaltyAccount,
   getNextBooking,
 } from "@/lib/portal/queries";
+import { ServiceCard } from "@/components/portal/ServiceCard";
 
 export default async function PortalHomePage() {
   const me = await getCurrentClient().catch(() => null);
@@ -42,30 +35,10 @@ export default async function PortalHomePage() {
           </Link>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <ServiceCard
-            href="/portal/book"
-            icon={<Zap size={18} strokeWidth={1.7} className="text-sage-deep" />}
-            title="EMS Sculpting"
-            subtitle="30 min · from £80"
-          />
-          <ServiceCard
-            href="/portal/book"
-            icon={<Snowflake size={18} strokeWidth={1.7} className="text-sage-deep" />}
-            title="Fat Freezing"
-            subtitle="30–45 min · from £160"
-          />
-          <ServiceCard
-            href="/portal/book"
-            icon={<Sparkles size={18} strokeWidth={1.7} className="text-sage-deep" />}
-            title="InfraBike"
-            subtitle="30 min · from £39"
-          />
-          <ServiceCard
-            href="/portal/book"
-            icon={<Star size={18} strokeWidth={1.7} className="text-sage-deep" />}
-            title="Laser Hair"
-            subtitle="15–60 min · from £9"
-          />
+          <ServiceCard href="/portal/book" iconKey="ems"   title="EMS Sculpting" subtitle="30 min · from £80" />
+          <ServiceCard href="/portal/book" iconKey="fat"   title="Fat Freezing"  subtitle="30–45 min · from £160" />
+          <ServiceCard href="/portal/book" iconKey="bike"  title="InfraBike"     subtitle="30 min · from £39" />
+          <ServiceCard href="/portal/book" iconKey="laser" title="Laser Hair"    subtitle="15–60 min · from £9" />
         </div>
       </section>
     </div>
@@ -199,35 +172,6 @@ async function HeroCard({
         )}
       </div>
     </div>
-  );
-}
-
-// ─── Service Card ─────────────────────────────────────────────────────────────
-
-function ServiceCard({
-  href,
-  icon,
-  title,
-  subtitle,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-sm transition-all duration-200 active:scale-[0.97] hover:shadow-md"
-    >
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sage/10">
-        {icon}
-      </div>
-      <div>
-        <p className="text-[14px] font-medium text-olive">{title}</p>
-        <p className="mt-0.5 text-[12px] text-olive/50">{subtitle}</p>
-      </div>
-    </Link>
   );
 }
 
