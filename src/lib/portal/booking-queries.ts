@@ -1,6 +1,7 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminSupabase } from "@/lib/supabase/admin";
 import { getCurrentClient } from "@/lib/portal/queries";
 
 /**
@@ -31,7 +32,10 @@ export async function getActiveServicesForCurrentTenant(): Promise<ServicePicker
  */
 const fetchServicesForTenant = unstable_cache(
   async (tenantId: string): Promise<ServicePickerRow[]> => {
-    const supabase = await createServerSupabase();
+    // Use admin client — unstable_cache runs outside the request context
+    // so cookies() / createServerSupabase() would fail. Admin client is safe
+    // here because we already verified the user owns this tenantId above.
+    const supabase = createAdminSupabase();
     const { data, error } = await supabase
       .from("services")
       .select(
