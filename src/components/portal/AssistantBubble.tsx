@@ -34,6 +34,9 @@ export function AssistantBubble({ hasUnread = false }: { hasUnread?: boolean }) 
     if (!btn) return;
 
     function onTouchStart(e: TouchEvent) {
+      // Claim the touch immediately — prevents iOS from ever taking
+      // over the gesture for scrolling mid-drag.
+      e.preventDefault();
       const t = e.touches[0];
       if (!t) return;
       const rect = btn!.getBoundingClientRect();
@@ -47,39 +50,40 @@ export function AssistantBubble({ hasUnread = false }: { hasUnread?: boolean }) 
     }
 
     function onTouchMove(e: TouchEvent) {
+      e.preventDefault();
       if (!drag.current) return;
       const t = e.touches[0];
       if (!t) return;
       const dx = t.clientX - drag.current.startTouchX;
       const dy = t.clientY - drag.current.startTouchY;
-      if (!drag.current.moved && Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
-      drag.current.moved = true;
-      // Prevent page scroll while dragging the bubble
-      e.preventDefault();
+      if (Math.abs(dx) >= DRAG_THRESHOLD || Math.abs(dy) >= DRAG_THRESHOLD) {
+        drag.current.moved = true;
+      }
       const newX = Math.max(MARGIN, Math.min(window.innerWidth - BUBBLE - MARGIN, drag.current.startBubbleX + dx));
       const newY = Math.max(MARGIN, Math.min(window.innerHeight - BUBBLE - MARGIN, drag.current.startBubbleY + dy));
-      // Update position via direct style for zero-lag during drag
+      // Direct DOM update = zero React re-render lag during drag
       btn!.style.left = `${newX}px`;
       btn!.style.top = `${newY}px`;
       btn!.style.right = "auto";
       btn!.style.bottom = "auto";
     }
 
-    function onTouchEnd() {
+    function onTouchEnd(e: TouchEvent) {
+      e.preventDefault();
       if (!drag.current) return;
       if (!drag.current.moved) {
         setOpen(true);
       } else {
-        // Commit final position to React state
         const rect = btn!.getBoundingClientRect();
         setPos({ x: rect.left, y: rect.top });
       }
       drag.current = null;
     }
 
-    btn.addEventListener("touchstart", onTouchStart, { passive: true });
+    // All passive: false so preventDefault() is allowed
+    btn.addEventListener("touchstart", onTouchStart, { passive: false });
     btn.addEventListener("touchmove", onTouchMove, { passive: false });
-    btn.addEventListener("touchend", onTouchEnd);
+    btn.addEventListener("touchend", onTouchEnd, { passive: false });
     return () => {
       btn.removeEventListener("touchstart", onTouchStart);
       btn.removeEventListener("touchmove", onTouchMove);
@@ -98,7 +102,7 @@ export function AssistantBubble({ hasUnread = false }: { hasUnread?: boolean }) 
         ref={btnRef}
         type="button"
         aria-label="Open Astrabody assistant"
-        onClick={() => { if (!drag.current?.moved) setOpen(true); }}
+        onClick={() => setOpen(true)}
         className="astra-bubble"
         data-pulse={pulse ? "1" : "0"}
         style={bubbleStyle}
