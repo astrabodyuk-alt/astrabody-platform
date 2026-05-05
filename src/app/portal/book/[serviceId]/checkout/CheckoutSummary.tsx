@@ -102,54 +102,63 @@ export function CheckoutSummary({
 
       <div className="my-5 h-px w-full bg-hairline" aria-hidden />
 
-      {hasRewards && applyRewards ? (
-        <Breakdown
-          baseAmount={baseAmount}
-          combined={combined}
-          appliedVouchers={applicableVouchers.filter((v) =>
-            combined.appliedVoucherIds.includes(v.id)
+      {/* All price/toggle/points content in one explicit flex-col so nothing
+          escapes the card when inside a sticky aside with md:self-start. */}
+      <div className="flex flex-col gap-5">
+        {/* Price block */}
+        <div className="flex flex-col gap-2">
+          {hasRewards && applyRewards ? (
+            <Breakdown
+              baseAmount={baseAmount}
+              combined={combined}
+              appliedVouchers={applicableVouchers.filter((v) =>
+                combined.appliedVoucherIds.includes(v.id)
+              )}
+            />
+          ) : (
+            <div className="flex items-baseline justify-between">
+              <span className="text-[13px] tracking-snug text-olive-soft">
+                {todayLabel}
+              </span>
+              <span className="font-serif text-[22px] font-medium tabular-nums text-sage-deep">
+                {formatGBP(baseAmount)}
+              </span>
+            </div>
           )}
-        />
-      ) : (
-        <div className="flex items-baseline justify-between">
-          <span className="text-[13px] tracking-snug text-olive-soft">
-            {todayLabel}
-          </span>
-          <span className="font-serif text-[22px] font-medium tabular-nums text-sage-deep">
-            {formatGBP(baseAmount)}
-          </span>
-        </div>
-      )}
 
-      {showRemaining && (
-        <div className="mt-2 flex items-baseline justify-between">
-          <span className="text-[13px] tracking-snug text-olive-soft">
-            Remaining at studio
-          </span>
-          <span className="text-[14px] tabular-nums text-olive">
-            {formatGBP(pricePence - depositPence)}
-          </span>
+          {showRemaining && (
+            <div className="flex items-baseline justify-between">
+              <span className="text-[13px] tracking-snug text-olive-soft">
+                Remaining at studio
+              </span>
+              <span className="text-[14px] tabular-nums text-olive">
+                {formatGBP(pricePence - depositPence)}
+              </span>
+            </div>
+          )}
         </div>
-      )}
 
-      {hasRewards && (
-        <div className="mt-5 flex items-center justify-between gap-3">
-          <span className="text-[12px] tracking-snug text-olive-soft">
-            Apply my rewards
-          </span>
-          <Toggle
-            checked={applyRewards}
-            onChange={() => onToggleApplyRewards(!applyRewards)}
-            label="Apply my rewards"
-          />
-        </div>
-      )}
+        {/* Rewards toggle — always a direct child of the gap-5 column */}
+        {hasRewards && (
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[12px] tracking-snug text-olive-soft">
+              Apply my rewards
+            </span>
+            <Toggle
+              checked={applyRewards}
+              onChange={() => onToggleApplyRewards(!applyRewards)}
+              label="Apply my rewards"
+            />
+          </div>
+        )}
 
-      {points > 0 && (
-        <p className="mt-5 text-[12px] tracking-snug text-sage">
-          You&rsquo;ll earn {formatPoints(points)} points on this session.
-        </p>
-      )}
+        {/* Points promise */}
+        {points > 0 && (
+          <p className="text-[12px] tracking-snug text-sage">
+            You&rsquo;ll earn {formatPoints(points)} points on this session.
+          </p>
+        )}
+      </div>
     </Card>
   );
 }
