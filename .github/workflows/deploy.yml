@@ -5,16 +5,24 @@ on:
     branches:
       - main
 
+env:
+  VERCEL_ORG_ID: team_zEty8hm0yBs6VEWdGVuCubRD
+  VERCEL_PROJECT_ID: prj_nppekBxdgYPNxgwHfksSpqEz9RNu
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: team_zEty8hm0yBs6VEWdGVuCubRD
-          vercel-project-id: prj_nppekBxdgYPNxgwHfksSpqEz9RNu
-          vercel-args: '--prod'
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Pull Vercel Environment
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
