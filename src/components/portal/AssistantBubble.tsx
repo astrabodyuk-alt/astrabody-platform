@@ -3,60 +3,89 @@
 import { useEffect, useRef, useState } from "react";
 import { AssistantModal } from "./AssistantModal";
 
-/**
- * Floating sage / olive concierge button. Draggable via pointer events —
- * tap opens the modal, drag repositions. Unread-badge prop lights up
- * when the studio inbox has unread chats.
- */
-export function AssistantBubble({
-  hasUnread = false,
-}: {
-  hasUnread?: boolean;
-}) {
+const BUBBLE = 56;
+const MARGIN = 12;
+const DRAG_THRESHOLD = 8; // px before we consider it a drag vs tap
+
+export function AssistantBubble({ hasUnread = false }: { hasUnread?: boolean }) {
   const [open, setOpen] = useState(false);
   const [pulse, setPulse] = useState(true);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+
+  // Use a ref for drag state so we don't re-render during drag
   const drag = useRef<{
-    startClientX: number;
-    startClientY: number;
+    startTouchX: number;
+    startTouchY: number;
     startBubbleX: number;
     startBubbleY: number;
     moved: boolean;
   } | null>(null);
+
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setPulse(false), 1500);
     return () => clearTimeout(t);
   }, []);
 
-  function onPointerDown(e: React.PointerEvent<HTMLButtonElement>) {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    const rect = e.currentTarget.getBoundingClientRect();
-    drag.current = {
-      startClientX: e.clientX,
-      startClientY: e.clientY,
-      startBubbleX: rect.left,
-      startBubbleY: rect.top,
-      moved: false,
+  // Use touch events directly — more reliable than pointer events on iOS Safari
+  useEffect(() => {
+    const btn = btnRef.current;
+    if (!btn) return;
+
+    function onTouchStart(e: TouchEvent) {
+      const t = e.touches[0];
+      if (!t) return;
+      const rect = btn!.getBoundingClientRect();
+      drag.current = {
+        startTouchX: t.clientX,
+        startTouchY: t.clientY,
+        startBubbleX: rect.left,
+        startBubbleY: rect.top,
+        moved: false,
+      };
+    }
+
+    function onTouchMove(e: TouchEvent) {
+      if (!drag.current) return;
+      const t = e.touches[0];
+      if (!t) return;
+      const dx = t.clientX - drag.current.startTouchX;
+      const dy = t.clientY - drag.current.startTouchY;
+      if (!drag.current.moved && Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
+      drag.current.moved = true;
+      // Prevent page scroll while dragging the bubble
+      e.preventDefault();
+      const newX = Math.max(MARGIN, Math.min(window.innerWidth - BUBBLE - MARGIN, drag.current.startBubbleX + dx));
+      const newY = Math.max(MARGIN, Math.min(window.innerHeight - BUBBLE - MARGIN, drag.current.startBubbleY + dy));
+      // Update position via direct style for zero-lag during drag
+      btn!.style.left = `${newX}px`;
+      btn!.style.top = `${newY}px`;
+      btn!.style.right = "auto";
+      btn!.style.bottom = "auto";
+    }
+
+    function onTouchEnd() {
+      if (!drag.current) return;
+      if (!drag.current.moved) {
+        setOpen(true);
+      } else {
+        // Commit final position to React state
+        const rect = btn!.getBoundingClientRect();
+        setPos({ x: rect.left, y: rect.top });
+      }
+      drag.current = null;
+    }
+
+    btn.addEventListener("touchstart", onTouchStart, { passive: true });
+    btn.addEventListener("touchmove", onTouchMove, { passive: false });
+    btn.addEventListener("touchend", onTouchEnd);
+    return () => {
+      btn.removeEventListener("touchstart", onTouchStart);
+      btn.removeEventListener("touchmove", onTouchMove);
+      btn.removeEventListener("touchend", onTouchEnd);
     };
-  }
-
-  function onPointerMove(e: React.PointerEvent<HTMLButtonElement>) {
-    if (!drag.current) return;
-    const dx = e.clientX - drag.current.startClientX;
-    const dy = e.clientY - drag.current.startClientY;
-    if (!drag.current.moved && Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-    drag.current.moved = true;
-    const BUBBLE = 56;
-    const newX = Math.max(8, Math.min(window.innerWidth - BUBBLE - 8, drag.current.startBubbleX + dx));
-    const newY = Math.max(8, Math.min(window.innerHeight - BUBBLE - 8, drag.current.startBubbleY + dy));
-    setPos({ x: newX, y: newY });
-  }
-
-  function onPointerUp() {
-    if (!drag.current?.moved) setOpen(true);
-    drag.current = null;
-  }
+  }, []);
 
   const bubbleStyle: React.CSSProperties = pos
     ? { left: pos.x, top: pos.y, right: "auto", bottom: "auto" }
@@ -66,11 +95,10 @@ export function AssistantBubble({
     <>
       <style>{BUBBLE_CSS}</style>
       <button
+        ref={btnRef}
         type="button"
         aria-label="Open Astrabody assistant"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
+        onClick={() => { if (!drag.current?.moved) setOpen(true); }}
         className="astra-bubble"
         data-pulse={pulse ? "1" : "0"}
         style={bubbleStyle}
@@ -94,7 +122,10 @@ const BUBBLE_CSS = `
   border-radius: 50%;
   border: 0;
   padding: 0;
-  cursor: pointer;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
   background: transparent;
   box-shadow: 0 4px 24px rgba(117,133,100,0.35);
   transition: transform 200ms cubic-bezier(0.32, 0.72, 0, 1);
