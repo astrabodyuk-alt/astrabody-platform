@@ -4,10 +4,11 @@ import { redirect } from "next/navigation";
 import {
   Calendar,
   ChevronRight,
-  MessageCircle,
-  ShoppingBag,
-  Star,
   ArrowRight,
+  Star,
+  Zap,
+  Snowflake,
+  Sparkles,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -15,29 +16,58 @@ import {
   getLoyaltyAccount,
   getNextBooking,
 } from "@/lib/portal/queries";
-import type { LucideIcon } from "lucide-react";
 
-/**
- * Portal home — Apple/Linear aesthetic.
- * Hero streams in via Suspense; quick actions render instantly.
- */
 export default async function PortalHomePage() {
   const me = await getCurrentClient().catch(() => null);
   if (!me) redirect("/portal/login");
 
   return (
-    <div className="flex min-h-[calc(100dvh-56px-86px)] flex-col gap-4 px-4 pb-8 pt-5">
-      {/* Hero */}
+    <div className="flex min-h-[calc(100dvh-56px-86px)] flex-col gap-5 px-4 pb-8 pt-5">
+      {/* Hero card */}
       <Suspense fallback={<HeroSkeleton />}>
         <HeroCard clientId={me.id} firstName={me.firstName} />
       </Suspense>
 
-      {/* Quick actions */}
-      <div className="grid grid-cols-3 gap-3">
-        <QuickAction href="/portal/book" Icon={Calendar} label="Book" />
-        <QuickAction href="/portal/chat" Icon={MessageCircle} label="Chat" />
-        <QuickAction href="/portal/shop" Icon={ShoppingBag} label="Shop" />
-      </div>
+      {/* Services */}
+      <section>
+        <div className="mb-3 flex items-center justify-between px-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-olive/50">
+            Services
+          </p>
+          <Link
+            href="/portal/book"
+            className="flex items-center gap-1 text-[11px] font-medium text-sage-deep"
+          >
+            See all <ArrowRight size={11} strokeWidth={2} />
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <ServiceCard
+            href="/portal/book"
+            icon={<Zap size={18} strokeWidth={1.7} className="text-sage-deep" />}
+            title="EMS Sculpting"
+            subtitle="30 min · from £80"
+          />
+          <ServiceCard
+            href="/portal/book"
+            icon={<Snowflake size={18} strokeWidth={1.7} className="text-sage-deep" />}
+            title="Fat Freezing"
+            subtitle="30–45 min · from £160"
+          />
+          <ServiceCard
+            href="/portal/book"
+            icon={<Sparkles size={18} strokeWidth={1.7} className="text-sage-deep" />}
+            title="InfraBike"
+            subtitle="30 min · from £39"
+          />
+          <ServiceCard
+            href="/portal/book"
+            icon={<Star size={18} strokeWidth={1.7} className="text-sage-deep" />}
+            title="Laser Hair"
+            subtitle="15–60 min · from £9"
+          />
+        </div>
+      </section>
     </div>
   );
 }
@@ -70,10 +100,10 @@ async function HeroCard({
       style={{
         background:
           "linear-gradient(160deg, #506040 0%, #3a4a2c 55%, #28381c 100%)",
-        minHeight: 320,
+        minHeight: 300,
       }}
     >
-      {/* Ambient glow top-right */}
+      {/* Ambient glows */}
       <div
         aria-hidden
         className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full"
@@ -82,23 +112,22 @@ async function HeroCard({
             "radial-gradient(circle at center, rgba(187,196,170,0.18) 0%, transparent 70%)",
         }}
       />
-      {/* Ambient glow bottom-left */}
       <div
         aria-hidden
         className="pointer-events-none absolute -bottom-8 -left-8 h-40 w-40 rounded-full"
         style={{
           background:
-            "radial-gradient(circle at center, rgba(117,133,100,0.25) 0%, transparent 70%)",
+            "radial-gradient(circle at center, rgba(117,133,100,0.22) 0%, transparent 70%)",
         }}
       />
 
       {/* Top row */}
       <div className="relative flex items-start justify-between">
         <div>
-          <p className="text-[12px] font-medium uppercase tracking-[0.12em] text-white/40">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/40">
             {greeting}
           </p>
-          <h1 className="mt-1 font-serif text-[30px] font-medium leading-none tracking-tight text-white">
+          <h1 className="mt-1 font-serif text-[28px] font-medium leading-none tracking-tight text-white">
             {firstName}
           </h1>
         </div>
@@ -111,35 +140,35 @@ async function HeroCard({
       </div>
 
       {/* Points */}
-      <div className="relative mt-8">
+      <div className="relative mt-6">
         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35">
           Inner Circle
         </p>
         <div className="mt-1 flex items-baseline gap-1.5">
-          <span className="font-serif text-[52px] font-medium leading-none tracking-tight text-white">
+          <span className="font-serif text-[50px] font-medium leading-none tracking-tight text-white">
             {points.toLocaleString()}
           </span>
           <span className="mb-1 text-[14px] font-medium text-white/35">pts</span>
         </div>
         {ptsToNext ? (
-          <p className="mt-2 text-[12px] text-white/40">
-            {ptsToNext.toLocaleString()} pts until your next reward
+          <p className="mt-1.5 text-[12px] text-white/40">
+            {ptsToNext.toLocaleString()} pts to your next reward
           </p>
         ) : loyalty.nextReward ? (
-          <p className="mt-2 text-[12px] text-sage-light">
-            Reward ready to redeem
+          <p className="mt-1.5 text-[12px] text-sage-light">
+            Reward ready to redeem ✦
           </p>
         ) : null}
       </div>
 
       {/* Next booking / CTA */}
-      <div className="relative mt-6">
+      <div className="relative mt-5">
         {nextBooking ? (
           <Link
             href="/portal/book"
-            className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/8 px-4 py-3.5 backdrop-blur-sm transition-colors hover:bg-white/12"
+            className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/10 px-4 py-3.5 transition-colors hover:bg-white/14"
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10">
               <Calendar size={14} strokeWidth={1.8} className="text-sage-light" />
             </div>
             <div className="min-w-0 flex-1">
@@ -156,10 +185,10 @@ async function HeroCard({
         ) : (
           <Link
             href="/portal/book"
-            className="group flex items-center justify-between rounded-2xl border border-white/12 bg-white/8 px-5 py-4 backdrop-blur-sm transition-all hover:bg-white/14"
+            className="group flex items-center justify-between rounded-2xl border border-white/15 bg-white/10 px-5 py-4 transition-colors hover:bg-white/15"
           >
-            <span className="text-[14px] font-medium text-white">
-              Book your first session
+            <span className="font-serif text-[17px] font-medium text-white">
+              Book a session
             </span>
             <ArrowRight
               size={16}
@@ -173,6 +202,35 @@ async function HeroCard({
   );
 }
 
+// ─── Service Card ─────────────────────────────────────────────────────────────
+
+function ServiceCard({
+  href,
+  icon,
+  title,
+  subtitle,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-sm transition-all duration-200 active:scale-[0.97] hover:shadow-md"
+    >
+      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sage/10">
+        {icon}
+      </div>
+      <div>
+        <p className="text-[14px] font-medium text-olive">{title}</p>
+        <p className="mt-0.5 text-[12px] text-olive/50">{subtitle}</p>
+      </div>
+    </Link>
+  );
+}
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function HeroSkeleton() {
@@ -182,49 +240,23 @@ function HeroSkeleton() {
       style={{
         background:
           "linear-gradient(160deg, #506040 0%, #3a4a2c 55%, #28381c 100%)",
-        minHeight: 320,
+        minHeight: 300,
       }}
     >
       <div className="flex items-start justify-between">
         <div className="flex flex-col gap-2.5">
           <div className="h-2.5 w-20 animate-pulse rounded-full bg-white/20" />
-          <div className="h-8 w-32 animate-pulse rounded-full bg-white/25" />
+          <div className="h-7 w-32 animate-pulse rounded-full bg-white/25" />
         </div>
         <div className="h-7 w-16 animate-pulse rounded-full bg-white/15" />
       </div>
-      <div className="mt-8 flex flex-col gap-2.5">
+      <div className="mt-6 flex flex-col gap-2">
         <div className="h-2 w-20 animate-pulse rounded-full bg-white/20" />
-        <div className="h-12 w-28 animate-pulse rounded-full bg-white/25" />
+        <div className="h-12 w-24 animate-pulse rounded-full bg-white/25" />
         <div className="h-2 w-44 animate-pulse rounded-full bg-white/15" />
       </div>
-      <div className="mt-6 h-[52px] animate-pulse rounded-2xl bg-white/10" />
+      <div className="mt-5 h-[54px] animate-pulse rounded-2xl bg-white/10" />
     </div>
-  );
-}
-
-// ─── Quick Actions ────────────────────────────────────────────────────────────
-
-function QuickAction({
-  href,
-  Icon,
-  label,
-}: {
-  href: string;
-  Icon: LucideIcon;
-  label: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="group flex flex-col items-center gap-2.5 rounded-2xl bg-white py-5 shadow-sm transition-all duration-200 active:scale-95 hover:shadow-md"
-    >
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sage/8 transition-colors group-hover:bg-sage/12">
-        <Icon size={18} strokeWidth={1.7} className="text-sage-deep" />
-      </div>
-      <span className="text-[12px] font-medium tracking-wide text-olive">
-        {label}
-      </span>
-    </Link>
   );
 }
 
