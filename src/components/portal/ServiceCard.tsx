@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Activity, Snowflake, Bike, Sparkles, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 
 interface ServiceCardProps {
   href: string;
@@ -12,113 +12,97 @@ interface ServiceCardProps {
 }
 
 /**
- * Service card — premium design with unique gradient per service.
- * Each card has:
- *   - Tinted gradient background (unique per service)
- *   - Large semi-transparent watermark icon (decorative depth)
- *   - Smaller accent icon box in the top-left
- *   - Arrow indicator top-right
+ * Service card — full-bleed studio photo with dark gradient overlay.
+ * Style inspired by premium fitness apps (photo-forward, text at bottom).
+ * Each service uses its own studio photo.
  */
 
 const SERVICE_CONFIG: Record<
   ServiceCardProps["iconKey"],
   {
-    bg: string;
-    iconColor: string;
-    iconBg: string;
-    watermarkColor: string;
+    photo: string;
     label: string;
+    /** Gradient tint — pushes the photo slightly toward the service's identity colour */
+    tint: string;
   }
 > = {
   ems: {
-    bg: "linear-gradient(145deg, #eef2e8 0%, #e2ead4 100%)",
-    iconColor: "#758564",
-    iconBg: "rgba(117,133,100,0.14)",
-    watermarkColor: "rgba(117,133,100,0.08)",
+    photo: "/images/ems-sculpting.jpg",
     label: "Muscle · Sculpt",
+    tint: "rgba(62,62,49,0.15)",
   },
   fat: {
-    bg: "linear-gradient(145deg, #e8eff5 0%, #d8e8f2 100%)",
-    iconColor: "#5a8faa",
-    iconBg: "rgba(90,143,170,0.13)",
-    watermarkColor: "rgba(90,143,170,0.07)",
+    photo: "/images/fat-freezing.jpg",
     label: "Cryo · Slim",
+    tint: "rgba(40,60,80,0.18)",
   },
   bike: {
-    bg: "linear-gradient(145deg, #f5ede6 0%, #f0e0d2 100%)",
-    iconColor: "#b86040",
-    iconBg: "rgba(184,96,64,0.12)",
-    watermarkColor: "rgba(184,96,64,0.07)",
+    photo: "/images/infrabike-card.jpg",
     label: "Infrared · Detox",
+    tint: "rgba(80,30,10,0.18)",
   },
   laser: {
-    bg: "linear-gradient(145deg, #f2edf8 0%, #e8dff5 100%)",
-    iconColor: "#8c68b8",
-    iconBg: "rgba(140,104,184,0.12)",
-    watermarkColor: "rgba(140,104,184,0.07)",
+    photo: "/images/laser-hair.jpg",
     label: "Diode · Smooth",
+    tint: "rgba(50,30,70,0.18)",
   },
-};
-
-const ICONS: Record<ServiceCardProps["iconKey"], React.ElementType> = {
-  ems:   Activity,
-  fat:   Snowflake,
-  bike:  Bike,
-  laser: Sparkles,
 };
 
 export function ServiceCard({ href, title, subtitle, iconKey }: ServiceCardProps) {
   const config = SERVICE_CONFIG[iconKey];
-  const Icon = ICONS[iconKey];
 
   return (
     <Link href={href} className="block">
       <motion.div
-        whileTap={{ scale: 0.97 }}
-        whileHover={{ y: -2, boxShadow: "0 10px 28px rgba(62,62,49,0.12)" }}
-        transition={{ type: "spring", stiffness: 400, damping: 22 }}
-        className="relative overflow-hidden rounded-2xl p-4 shadow-sm"
-        style={{
-          background: config.bg,
-          minHeight: 130,
-        }}
+        whileTap={{ scale: 0.96 }}
+        whileHover={{ y: -3, boxShadow: "0 14px 32px rgba(14,22,10,0.22)" }}
+        transition={{ type: "spring" as const, stiffness: 400, damping: 22 }}
+        className="relative overflow-hidden rounded-[20px] shadow-md"
+        style={{ minHeight: 170 }}
       >
-        {/* Watermark icon — large decorative background */}
+        {/* ── Full-bleed studio photo ── */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -bottom-3 -right-3"
-          style={{ color: config.watermarkColor }}
-        >
-          <Icon size={88} strokeWidth={1.1} color={config.watermarkColor} />
-        </div>
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-500"
+          style={{ backgroundImage: `url('${config.photo}')` }}
+        />
 
-        {/* Arrow top-right */}
-        <div className="absolute right-3.5 top-3.5">
-          <ArrowUpRight
-            size={14}
-            strokeWidth={2}
-            style={{ color: config.iconColor, opacity: 0.5 }}
-          />
-        </div>
-
-        {/* Icon box */}
+        {/* ── Colour tint layer ── */}
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-xl"
-          style={{ background: config.iconBg }}
-        >
-          <Icon size={20} strokeWidth={1.5} style={{ color: config.iconColor }} />
+          aria-hidden
+          className="absolute inset-0"
+          style={{ background: config.tint }}
+        />
+
+        {/* ── Bottom gradient for text legibility ── */}
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to top, rgba(10,16,8,0.82) 0%, rgba(10,16,8,0.35) 55%, transparent 100%)",
+          }}
+        />
+
+        {/* ── Arrow top-right ── */}
+        <div className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm">
+          <ArrowUpRight size={12} strokeWidth={2.2} className="text-white/80" />
         </div>
 
-        {/* Text */}
-        <div className="mt-3">
-          <p className="text-[14px] font-semibold text-olive">{title}</p>
-          <p className="mt-0.5 text-[11px] text-olive/50">{subtitle}</p>
-          <p
-            className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.1em]"
-            style={{ color: config.iconColor, opacity: 0.7 }}
-          >
-            {config.label}
-          </p>
+        {/* ── Text block bottom ── */}
+        <div className="relative flex h-full flex-col justify-end" style={{ minHeight: 170 }}>
+          <div className="px-3.5 pb-3.5">
+            {/* Category tag */}
+            <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.16em] text-white/50">
+              {config.label}
+            </p>
+            {/* Service name */}
+            <p className="font-serif text-[17px] font-medium leading-tight text-white">
+              {title}
+            </p>
+            {/* Price & duration */}
+            <p className="mt-0.5 text-[11px] text-white/50">{subtitle}</p>
+          </div>
         </div>
       </motion.div>
     </Link>
