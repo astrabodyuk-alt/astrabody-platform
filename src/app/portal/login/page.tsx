@@ -1,21 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { bootstrapPortalLink } from "./actions";
+import { cn } from "@/lib/utils";
 
 type Step = "email" | "code";
 
 /**
- * Portal login. Two steps, no magic link:
- *   1. Email form. Submits → Supabase sends a 6-digit OTP code.
- *   2. Code form. User pastes/types the code → verifyOtp → bootstrap → /portal.
+ * Portal login — dark premium redesign.
  *
- * Magic links were swapped out because Outlook and Gmail were aggressively
- * pre-fetching the link, which consumes the single-use token before the
- * user clicks. OTP codes don't have that problem.
+ * Background: deep olive gradient. Frosted glass card.
+ * Two steps, no magic link:
+ *   1. Email form → Supabase sends 6-digit OTP.
+ *   2. Code form → verifyOtp → bootstrap → /portal.
+ *
+ * Magic links were swapped out because Outlook/Gmail pre-fetch the link,
+ * which consumes the single-use token before the user clicks.
  */
 export default function PortalLoginPage() {
   const [step, setStep] = useState<Step>("email");
@@ -25,7 +26,7 @@ export default function PortalLoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
 
-  // If the client already has a valid session, skip the login form entirely.
+  // Redirect if already authenticated
   useEffect(() => {
     createBrowserSupabase()
       .auth.getSession()
@@ -34,7 +35,7 @@ export default function PortalLoginPage() {
       });
   }, []);
 
-  // Cooldown countdown for the resend button.
+  // Cooldown countdown for resend button
   useEffect(() => {
     if (cooldown <= 0) return;
     const id = setInterval(
@@ -93,8 +94,6 @@ export default function PortalLoginPage() {
       await bootstrapPortalLink();
     } catch (err) {
       console.error("[login] bootstrap failed", err);
-      // Non-blocking: the next /portal render will redirect back here if
-      // the link genuinely wasn't created.
     }
     window.location.assign("/portal");
   }
@@ -112,12 +111,45 @@ export default function PortalLoginPage() {
   }
 
   return (
-    <div className="px-6 pt-12">
-      <p className="mb-10 text-center font-serif text-[18px] font-medium tracking-tight text-olive-soft">
-        Astrabody
-      </p>
+    /* ── Full-screen dark gradient background ── */
+    <div
+      className="relative flex min-h-screen flex-col items-center justify-center px-5 py-12"
+      style={{
+        background: "linear-gradient(160deg, #2e3d22 0%, #1a2215 55%, #111a0e 100%)",
+      }}
+    >
+      {/* Subtle radial glow behind card */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: "radial-gradient(ellipse 70% 50% at 50% 40%, rgba(117,133,100,0.18) 0%, transparent 70%)",
+        }}
+      />
 
-      <Card className="mx-auto w-full max-w-[400px] p-8">
+      {/* ── Wordmark ── */}
+      <div className="relative mb-8 flex flex-col items-center gap-1">
+        <h1
+          className="font-serif text-[38px] font-light tracking-[0.08em] text-white"
+          style={{ fontFamily: "'Cormorant Garamond', serif" }}
+        >
+          Astrabody
+        </h1>
+        <p className="text-[11px] font-medium tracking-[0.22em] uppercase text-white/40">
+          Sculpt &middot; Refine &middot; Transform
+        </p>
+      </div>
+
+      {/* ── Glass card ── */}
+      <div
+        className="relative w-full max-w-[400px] overflow-hidden rounded-[24px] px-7 py-8"
+        style={{
+          background: "rgba(255,255,255,0.06)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          border: "1px solid rgba(255,255,255,0.10)",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08)",
+        }}
+      >
         {step === "email" ? (
           <FormView
             email={email}
@@ -134,18 +166,23 @@ export default function PortalLoginPage() {
             onSubmit={handleVerify}
             verifying={busy}
             isInvalidCode={error === "invalid_code"}
-            otherError={
-              error && error !== "invalid_code" ? error : undefined
-            }
+            otherError={error && error !== "invalid_code" ? error : undefined}
             cooldown={cooldown}
             onResend={handleResend}
             onReset={handleReset}
           />
         )}
-      </Card>
+      </div>
+
+      {/* Footer */}
+      <p className="relative mt-8 text-[11px] tracking-wide text-white/20">
+        Your private portal &nbsp;&middot;&nbsp; Chandler&rsquo;s Ford
+      </p>
     </div>
   );
 }
+
+// ── Sub-views ────────────────────────────────────────────────────────────────
 
 function FormView({
   email,
@@ -162,15 +199,15 @@ function FormView({
 }) {
   return (
     <>
-      <h1 className="font-serif text-[28px] font-medium leading-tight tracking-tight text-olive">
-        Welcome to Astrabody
-      </h1>
-      <p className="mt-3 text-[15px] tracking-snug text-olive-soft">
-        We&rsquo;ll send you a 6-digit code. No password, ever.
+      <h2 className="font-serif text-[26px] font-light leading-tight tracking-tight text-white">
+        Welcome back
+      </h2>
+      <p className="mt-2 text-[14px] leading-snug text-white/50">
+        Enter your email and we&rsquo;ll send you a 6-digit code. No password, ever.
       </p>
 
-      <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-3">
-        <input
+      <form onSubmit={onSubmit} className="mt-7 flex flex-col gap-3">
+        <DarkInput
           type="email"
           value={email}
           onChange={(e) => onEmail(e.target.value)}
@@ -179,17 +216,12 @@ function FormView({
           required
           autoComplete="email"
           inputMode="email"
-          className="h-11 rounded-[12px] border-[0.5px] border-hairline-strong bg-white px-3 text-[14px] text-olive shadow-1 placeholder:text-olive-faint disabled:opacity-50"
         />
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={sending || !email.trim()}
-        >
-          {sending ? "Sending" : "Send me a code"}
-        </Button>
+        <PrimaryButton type="submit" disabled={sending || !email.trim()}>
+          {sending ? "Sending…" : "Send me a code"}
+        </PrimaryButton>
         {errorMessage && (
-          <p className="text-[12px] text-destructive">{errorMessage}</p>
+          <p className="text-[12px] text-red-400">{errorMessage}</p>
         )}
       </form>
     </>
@@ -221,68 +253,119 @@ function CodeView({
 }) {
   return (
     <>
-      <h1 className="font-serif text-[28px] font-medium leading-tight tracking-tight text-olive">
-        Enter the code we sent.
-      </h1>
-      <p className="mt-3 text-[15px] tracking-snug text-olive-soft">
-        Check your inbox for a 6-digit code from Astrabody. Paste it below.
-      </p>
-      <p className="mt-1 text-[13px] tracking-snug text-olive-faint">
-        Sent to <span className="font-medium text-olive-soft">{email}</span>
+      <h2 className="font-serif text-[26px] font-light leading-tight tracking-tight text-white">
+        Check your inbox
+      </h2>
+      <p className="mt-2 text-[14px] leading-snug text-white/50">
+        We sent a 6-digit code to{" "}
+        <span className="font-medium text-white/70">{email}</span>.
       </p>
 
-      <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
+      <form onSubmit={onSubmit} className="mt-7 flex flex-col gap-4">
         <OtpInput value={code} onChange={onCode} disabled={verifying} />
-        <Button
+        <PrimaryButton
           type="submit"
-          variant="primary"
           disabled={code.length !== 6 || verifying}
         >
-          {verifying ? "Signing in" : "Sign in"}
-        </Button>
+          {verifying ? "Signing in…" : "Sign in"}
+        </PrimaryButton>
         {isInvalidCode && (
-          <p className="text-center text-[13px] tracking-snug text-olive-soft">
+          <p className="text-center text-[13px] text-white/50">
             That code didn&rsquo;t work. Try again or request a new one.
           </p>
         )}
         {otherError && (
-          <p className="text-center text-[12px] text-destructive">
-            {otherError}
-          </p>
+          <p className="text-center text-[12px] text-red-400">{otherError}</p>
         )}
       </form>
 
-      <div className="mt-6 flex flex-col items-center gap-1">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
+      <div className="mt-5 flex flex-col items-center gap-1">
+        <GhostButton
           disabled={cooldown > 0 || verifying}
           onClick={onResend}
         >
-          {cooldown > 0
-            ? `Send a new code in ${cooldown}s`
-            : "Send me a new code"}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onReset}
-          disabled={verifying}
-        >
+          {cooldown > 0 ? `Send a new code in ${cooldown}s` : "Send a new code"}
+        </GhostButton>
+        <GhostButton onClick={onReset} disabled={verifying}>
           Use a different email
-        </Button>
+        </GhostButton>
       </div>
     </>
   );
 }
 
+// ── Primitives ───────────────────────────────────────────────────────────────
+
+function DarkInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      {...props}
+      className={cn(
+        "h-12 w-full rounded-[14px] px-4 text-[14px] text-white placeholder:text-white/30",
+        "border border-white/10 bg-white/8",
+        "focus:border-sage/60 focus:outline-none focus:ring-1 focus:ring-sage/40",
+        "disabled:opacity-40",
+        props.className
+      )}
+      style={{ background: "rgba(255,255,255,0.07)", ...props.style }}
+    />
+  );
+}
+
+function PrimaryButton({
+  children,
+  disabled,
+  type = "button",
+  onClick,
+}: {
+  children: React.ReactNode;
+  disabled?: boolean;
+  type?: "button" | "submit";
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type={type}
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        "h-12 w-full rounded-full text-[14px] font-medium tracking-wide text-cream",
+        "transition-all duration-200",
+        "disabled:cursor-not-allowed disabled:opacity-40",
+        "bg-sage hover:bg-sage/90 active:scale-[0.98]"
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function GhostButton({
+  children,
+  disabled,
+  onClick,
+}: {
+  children: React.ReactNode;
+  disabled?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="py-1 text-[13px] text-white/40 transition-colors hover:text-white/60 disabled:opacity-40"
+    >
+      {children}
+    </button>
+  );
+}
+
+// ── OTP Input ────────────────────────────────────────────────────────────────
+
 /**
  * Six-box numeric OTP input. Apple iOS 2FA-style.
  * `value` is the contiguous prefix of digits typed so far (0–6 chars).
- * Out-of-order taps are tolerated: every typed digit is appended to the
- * prefix, focus follows the next-empty box. Paste fills all six.
  */
 function OtpInput({
   value,
@@ -295,7 +378,6 @@ function OtpInput({
 }) {
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
 
-  // Auto-focus the first empty box on mount.
   useEffect(() => {
     const idx = Math.min(value.length, 5);
     inputsRef.current[idx]?.focus();
@@ -351,9 +433,7 @@ function OtpInput({
       {digits.map((digit, i) => (
         <input
           key={i}
-          ref={(el) => {
-            inputsRef.current[i] = el;
-          }}
+          ref={(el) => { inputsRef.current[i] = el; }}
           type="text"
           inputMode="numeric"
           pattern="\d*"
@@ -365,7 +445,17 @@ function OtpInput({
           disabled={disabled}
           autoComplete="one-time-code"
           aria-label={`Digit ${i + 1} of 6`}
-          className="h-14 w-12 rounded-[12px] border-[0.5px] border-hairline-strong bg-white text-center font-serif text-[22px] font-medium tabular-nums text-olive shadow-1 disabled:opacity-50"
+          className={cn(
+            "h-14 w-12 rounded-[12px] text-center font-serif text-[24px] font-medium tabular-nums text-white",
+            "border transition-all duration-150",
+            "focus:outline-none disabled:opacity-40",
+            digit
+              ? "border-sage/60 bg-sage/12 shadow-[0_0_0_1px_rgba(117,133,100,0.4)]"
+              : "border-white/12 bg-white/6"
+          )}
+          style={{
+            background: digit ? "rgba(117,133,100,0.12)" : "rgba(255,255,255,0.06)",
+          }}
         />
       ))}
     </div>
