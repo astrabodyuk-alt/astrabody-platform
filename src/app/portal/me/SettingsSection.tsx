@@ -1,24 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { createBrowserSupabase } from "@/lib/supabase/browser";
+import {
+  User,
+  Cake,
+  Mail,
+  Clock,
+  Bell,
+  LogOut,
+  ChevronRight,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { ensurePushSubscription } from "@/lib/web-push/client";
 import { updateClientProfile } from "./actions";
 import { Toggle } from "@/components/ui/toggle";
 
 /**
- * /portal/me settings sub-section.
+ * /portal/me settings — redesigned as proper app-style rows.
  *
- *   - Edit your name (clients.full_name)
- *   - Marketing opt-in (clients.marketing_opt_in) — Apple-style toggle
- *   - Birthday (clients.birth_date) — once set, the platform credits 500
- *     pts on that date each year.
- *   - Sign out — runs supabase.auth.signOut() in the browser then
- *     redirects to /portal/login.
+ * Three section groups (like iOS Settings / Airbnb):
+ *   PROFILE     — name (tap-to-edit), birthday
+ *   PREFERENCES — marketing toggle, preferred hours, notifications
+ *   ACCOUNT     — sign out
  */
 export function SettingsSection({
   initialFullName,
@@ -34,250 +39,277 @@ export function SettingsSection({
   initialPreferredEndHour: number | null;
 }) {
   const router = useRouter();
+
+  // ── state ──────────────────────────────────────────────────────
   const [fullName, setFullName] = useState(initialFullName);
+  const [editingName, setEditingName] = useState(false);
+  const [savingName, setSavingName] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
   const [marketing, setMarketing] = useState(initialMarketingOptIn);
   const [birthday, setBirthday] = useState(initialBirthDate ?? "");
   const [prefStart, setPrefStart] = useState<number | null>(initialPreferredStartHour);
   const [prefEnd, setPrefEnd] = useState<number | null>(initialPreferredEndHour);
-  const [savingName, setSavingName] = useState(false);
-  const [savedFlag, setSavedFlag] = useState<"name" | "marketing" | "birthday" | "hours" | null>(null);
 
+  // Focus name input when edit mode opens
+  useEffect(() => {
+    if (editingName) nameInputRef.current?.focus();
+  }, [editingName]);
+
+  // ── handlers ───────────────────────────────────────────────────
   async function saveName() {
+    if (fullName === initialFullName) { setEditingName(false); return; }
     setSavingName(true);
     const result = await updateClientProfile({ full_name: fullName });
     setSavingName(false);
-    if (result.ok) {
-      setSavedFlag("name");
-      router.refresh();
-      setTimeout(() => setSavedFlag(null), 1500);
-    }
+    if (result.ok) { router.refresh(); setEditingName(false); }
   }
 
   async function toggleMarketing() {
     const next = !marketing;
     setMarketing(next);
     const result = await updateClientProfile({ marketing_opt_in: next });
-    if (result.ok) {
-      setSavedFlag("marketing");
-      setTimeout(() => setSavedFlag(null), 1500);
-    } else {
-      // revert on failure
-      setMarketing(!next);
-    }
+    if (!result.ok) setMarketing(!next); // revert on failure
   }
 
   async function saveBirthday(date: string) {
     setBirthday(date);
-    const result = await updateClientProfile({ birth_date: date || null });
-    if (result.ok) {
-      setSavedFlag("birthday");
-      setTimeout(() => setSavedFlag(null), 1500);
-    }
+    await updateClientProfile({ birth_date: date || null });
   }
 
   async function savePreferredHours(start: number | null, end: number | null) {
-    const result = await updateClientProfile({
-      preferred_start_hour: start,
-      preferred_end_hour: end,
-    });
-    if (result.ok) {
-      setSavedFlag("hours");
-      setTimeout(() => setSavedFlag(null), 1500);
-    }
+    await updateClientProfile({ preferred_start_hour: start, preferred_end_hour: end });
   }
 
   async function signOut() {
-    const supabase = createBrowserSupabase();
-    await supabase.auth.signOut();
+    await createBrowserSupabase().auth.signOut();
     window.location.assign("/portal/login");
   }
 
+  // ── derived labels ─────────────────────────────────────────────
+  const birthdayLabel = birthday
+    ? new Date(`${birthday}T00:00:00`).toLocaleDateString("en-GB", {
+        day: "numeric", month: "long",
+      })
+    : null;
+
+  const hoursLabel =
+    prefStart != null && prefEnd != null
+      ? `${formatHour(prefStart)} – ${formatHour(prefEnd)}`
+      : null;
+
+  // ── render ─────────────────────────────────────────────────────
   return (
-    <Card className="flex flex-col gap-5 p-5">
-      {/* Name */}
-      <div className="flex flex-col gap-1">
-        <span className="text-[11px] font-medium uppercase tracking-label-caps text-olive-soft">
-          Your name
-        </span>
-        <div className="flex items-center gap-2">
-          <input
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="Sarah Reid"
-            className="h-11 flex-1 rounded-[12px] border-[0.5px] border-hairline-strong bg-white px-3 text-[14px] text-olive shadow-1 placeholder:text-olive-faint"
-          />
-          <Button
-            type="button"
-            variant="primary"
-            size="sm"
-            onClick={saveName}
-            disabled={savingName || fullName === initialFullName}
-          >
-            {savingName ? "Saving" : savedFlag === "name" ? "Saved ✓" : "Save"}
-          </Button>
-        </div>
-      </div>
+    <div className="flex flex-col gap-6">
 
-      <Divider />
-
-      {/* Marketing opt-in */}
-      <div className="flex items-center justify-between gap-3">
+      {/* ── PROFILE ─────────────────────────────────────────── */}
+      <Section title="Profile">
+        {/* Name row */}
         <div className="flex flex-col">
-          <span className="text-[14px] font-medium tracking-snug text-olive">
-            Marketing opt-in
-          </span>
-          <span className="text-[12px] tracking-snug text-olive-soft">
-            Occasional Astrabody updates by email. Always quiet.
-          </span>
-        </div>
-        <Toggle checked={marketing} onChange={toggleMarketing} label="Marketing opt-in" />
-      </div>
-
-      <Divider />
-
-      {/* Birthday */}
-      <div className="flex flex-col gap-1">
-        <span className="text-[11px] font-medium uppercase tracking-label-caps text-olive-soft">
-          Birthday
-        </span>
-        <div className="flex items-center gap-2">
-          <input
-            type="date"
-            value={birthday}
-            onChange={(e) => saveBirthday(e.target.value)}
-            className="h-11 flex-1 rounded-[12px] border-[0.5px] border-hairline-strong bg-white px-3 text-[14px] tabular-nums text-olive shadow-1 placeholder:text-olive-faint"
-          />
-          {savedFlag === "birthday" && (
-            <span className="text-[11px] font-medium uppercase tracking-label-caps text-sage">
-              Saved ✓
+          <button
+            type="button"
+            onClick={() => !editingName && setEditingName(true)}
+            className={cn(
+              "flex w-full items-center gap-4 px-4 py-3.5 transition-colors active:bg-cream-deep",
+              editingName && "pointer-events-none"
+            )}
+          >
+            <IconBox><User size={17} strokeWidth={1.5} /></IconBox>
+            <span className="flex-1 text-left text-[15px] font-medium text-olive">
+              Your name
             </span>
+            {!editingName && (
+              <>
+                <span className="max-w-[140px] truncate text-[14px] text-olive-soft">
+                  {fullName || "Add name"}
+                </span>
+                <ChevronRight size={16} strokeWidth={1.6} className="shrink-0 text-olive-faint" />
+              </>
+            )}
+          </button>
+
+          {editingName && (
+            <div className="px-4 pb-4 pt-1">
+              <input
+                ref={nameInputRef}
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && saveName()}
+                placeholder="Your full name"
+                className="h-11 w-full rounded-[12px] border-[0.5px] border-hairline-strong bg-white px-3 text-[14px] text-olive shadow-1 placeholder:text-olive-faint focus:outline-none focus:ring-1 focus:ring-sage/40"
+              />
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={saveName}
+                  disabled={savingName}
+                  className="h-9 flex-1 rounded-full bg-sage text-[13px] font-medium text-cream disabled:opacity-50"
+                >
+                  {savingName ? "Saving…" : "Save"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setFullName(initialFullName); setEditingName(false); }}
+                  className="h-9 flex-1 rounded-full border border-hairline-strong text-[13px] font-medium text-olive-soft"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           )}
         </div>
-        <span className="text-[11px] tracking-snug text-olive-faint">
-          We&rsquo;ll credit 500 pts on the day, every year.
-        </span>
-      </div>
 
-      <Divider />
+        <RowDivider />
 
-      {/* Preferred booking hours */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-start justify-between">
-          <div className="flex flex-col">
-            <span className="text-[14px] font-medium tracking-snug text-olive">
-              Preferred booking hours
-            </span>
-            <span className="text-[12px] tracking-snug text-olive-soft">
-              We&rsquo;ll highlight slots that fit your schedule.
-            </span>
+        {/* Birthday row */}
+        <label className="flex cursor-pointer items-center gap-4 px-4 py-3.5 transition-colors active:bg-cream-deep">
+          <IconBox><Cake size={17} strokeWidth={1.5} /></IconBox>
+          <span className="flex-1 text-[15px] font-medium text-olive">Birthday</span>
+          <span className="text-[14px] text-olive-soft">
+            {birthdayLabel ?? "Not set"}
+          </span>
+          {/* Native date input — invisible, positioned over the chevron */}
+          <div className="relative shrink-0">
+            <ChevronRight size={16} strokeWidth={1.6} className="text-olive-faint" />
+            <input
+              type="date"
+              value={birthday}
+              onChange={(e) => saveBirthday(e.target.value)}
+              className="absolute inset-0 cursor-pointer opacity-0"
+            />
           </div>
-          {savedFlag === "hours" && (
-            <span className="shrink-0 text-[11px] font-medium uppercase tracking-label-caps text-sage">
-              Saved ✓
-            </span>
-          )}
+        </label>
+        <p className="px-4 pb-3 text-[11px] tracking-snug text-olive-faint">
+          We&rsquo;ll credit 500 pts on your birthday, every year.
+        </p>
+      </Section>
+
+      {/* ── PREFERENCES ─────────────────────────────────────── */}
+      <Section title="Preferences">
+        {/* Marketing */}
+        <div className="flex items-center gap-4 px-4 py-3.5">
+          <IconBox><Mail size={17} strokeWidth={1.5} /></IconBox>
+          <div className="flex-1">
+            <p className="text-[15px] font-medium text-olive">Marketing updates</p>
+            <p className="text-[12px] text-olive-soft">Occasional offers by email. Always quiet.</p>
+          </div>
+          <Toggle checked={marketing} onChange={toggleMarketing} label="Marketing updates" />
         </div>
-        <div className="flex items-center gap-2">
-          <HourSelect
-            value={prefStart}
-            placeholder="From"
-            onChange={(h) => {
-              setPrefStart(h);
-              savePreferredHours(h, prefEnd);
-            }}
-          />
-          <span className="text-[12px] text-olive-soft">to</span>
-          <HourSelect
-            value={prefEnd}
-            placeholder="Until"
-            onChange={(h) => {
-              setPrefEnd(h);
-              savePreferredHours(prefStart, h);
-            }}
-          />
+
+        <RowDivider />
+
+        {/* Preferred hours */}
+        <div className="flex flex-col">
+          <div className="flex items-center gap-4 px-4 py-3.5">
+            <IconBox><Clock size={17} strokeWidth={1.5} /></IconBox>
+            <div className="flex-1">
+              <p className="text-[15px] font-medium text-olive">Preferred booking hours</p>
+              <p className="text-[12px] text-olive-soft">
+                {hoursLabel ?? "Highlight slots that fit your schedule"}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-4 pb-4">
+            <HourSelect
+              value={prefStart}
+              placeholder="From"
+              onChange={(h) => { setPrefStart(h); savePreferredHours(h, prefEnd); }}
+            />
+            <span className="shrink-0 text-[12px] text-olive-soft">to</span>
+            <HourSelect
+              value={prefEnd}
+              placeholder="Until"
+              onChange={(h) => { setPrefEnd(h); savePreferredHours(prefStart, h); }}
+            />
+          </div>
         </div>
-      </div>
 
-      <Divider />
+        <RowDivider />
 
-      {/* Notifications */}
-      <NotificationsRow />
+        {/* Notifications */}
+        <NotificationsRow />
+      </Section>
 
-      <Divider />
-
-      {/* Sign out */}
-      <div>
-        <Button
+      {/* ── ACCOUNT ─────────────────────────────────────────── */}
+      <Section title="Account">
+        <button
           type="button"
-          variant="ghost"
-          size="sm"
           onClick={signOut}
-          className="text-olive-soft hover:text-destructive"
+          className="flex w-full items-center gap-4 px-4 py-3.5 transition-colors active:bg-cream-deep"
         >
-          Sign out
-        </Button>
-      </div>
-    </Card>
+          <IconBox destructive><LogOut size={17} strokeWidth={1.5} className="text-destructive" /></IconBox>
+          <span className="flex-1 text-left text-[15px] font-medium text-destructive">Sign out</span>
+        </button>
+      </Section>
+
+    </div>
   );
 }
 
-function Divider() {
-  return <div className="h-px w-full bg-hairline" aria-hidden />;
+// ── sub-components ──────────────────────────────────────────────
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-widest text-olive-faint">
+        {title}
+      </p>
+      <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-[0.5px] ring-hairline-strong">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function IconBox({ children, destructive }: { children: React.ReactNode; destructive?: boolean }) {
+  return (
+    <div className={cn(
+      "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+      destructive ? "bg-destructive/8 text-destructive" : "bg-sage/8 text-sage"
+    )}>
+      {children}
+    </div>
+  );
+}
+
+function RowDivider() {
+  return <div className="ml-16 h-px bg-hairline" aria-hidden />;
 }
 
 function NotificationsRow() {
-  const [permission, setPermission] = useState<NotificationPermission | "unsupported">(
-    "default"
-  );
+  const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!("Notification" in window) || !("serviceWorker" in navigator)) {
-      setPermission("unsupported");
-      return;
+      setPermission("unsupported"); return;
     }
     setPermission(Notification.permission);
   }, []);
 
   async function handleToggle() {
-    if (busy || permission === "unsupported") return;
-    if (permission === "denied") return;
-
+    if (busy || permission === "unsupported" || permission === "denied") return;
     setBusy(true);
     const result = await ensurePushSubscription({ promptIfDefault: true });
     setBusy(false);
-
-    if (result.ok) {
-      setPermission("granted");
-    } else if (result.reason === "denied") {
-      setPermission("denied");
-    }
+    if (result.ok) setPermission("granted");
+    else if (result.reason === "denied") setPermission("denied");
   }
 
   const on = permission === "granted";
-  const subCopy = (() => {
-    if (permission === "unsupported") {
-      return "Your browser doesn't support push notifications.";
-    }
-    if (permission === "denied") {
-      return "Blocked. Open your browser settings to re-enable.";
-    }
-    if (permission === "granted") {
-      return "On. You'll hear from us when it matters.";
-    }
-    return "We'll let you know when Tove or Jade reply. Tap to allow.";
-  })();
+  const subCopy =
+    permission === "unsupported" ? "Not supported in this browser." :
+    permission === "denied"      ? "Blocked — re-enable in browser settings." :
+    permission === "granted"     ? "On. We'll only message when it matters." :
+                                   "Tap to allow. We keep it quiet.";
 
   return (
-    <div className="flex items-center justify-between gap-3">
-      <div className="flex flex-col">
-        <span className="text-[14px] font-medium tracking-snug text-olive">
-          Notifications
-        </span>
-        <span className="text-[12px] tracking-snug text-olive-soft">
-          {subCopy}
-        </span>
+    <div className="flex items-center gap-4 px-4 py-3.5">
+      <IconBox><Bell size={17} strokeWidth={1.5} /></IconBox>
+      <div className="flex-1">
+        <p className="text-[15px] font-medium text-olive">Notifications</p>
+        <p className="text-[12px] text-olive-soft">{subCopy}</p>
       </div>
       <Toggle
         checked={on}
@@ -289,14 +321,19 @@ function NotificationsRow() {
   );
 }
 
-/** Hour picker — 8am to 9pm in 1h steps. */
+// ── helpers ─────────────────────────────────────────────────────
+
+function formatHour(h: number): string {
+  if (h === 12) return "12pm";
+  if (h === 0)  return "12am";
+  return h < 12 ? `${h}am` : `${h - 12}pm`;
+}
+
 const HOUR_OPTIONS: { value: number; label: string }[] = Array.from(
   { length: 14 },
   (_, i) => {
-    const h = i + 8; // 8–21
-    const period = h < 12 ? "am" : "pm";
-    const display = h === 12 ? 12 : h % 12;
-    return { value: h, label: `${display}:00 ${period}` };
+    const h = i + 8;
+    return { value: h, label: formatHour(h) };
   }
 );
 
@@ -312,16 +349,12 @@ function HourSelect({
   return (
     <select
       value={value ?? ""}
-      onChange={(e) =>
-        onChange(e.target.value === "" ? null : parseInt(e.target.value, 10))
-      }
-      className="h-11 flex-1 appearance-none rounded-[12px] border-[0.5px] border-hairline-strong bg-white px-3 text-[14px] text-olive shadow-1 focus:outline-none focus:ring-1 focus:ring-sage/40"
+      onChange={(e) => onChange(e.target.value === "" ? null : parseInt(e.target.value, 10))}
+      className="h-10 flex-1 appearance-none rounded-xl border-[0.5px] border-hairline-strong bg-cream px-3 text-[13px] text-olive focus:outline-none focus:ring-1 focus:ring-sage/40"
     >
       <option value="">{placeholder}</option>
       {HOUR_OPTIONS.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
+        <option key={o.value} value={o.value}>{o.label}</option>
       ))}
     </select>
   );
