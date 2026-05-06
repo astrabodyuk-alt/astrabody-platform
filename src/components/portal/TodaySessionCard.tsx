@@ -180,10 +180,9 @@ export function TodaySessionCard({ booking }: { booking: NextBookingView }) {
       variants={cardVariants}
       initial="hidden"
       animate="visible"
-      className="overflow-hidden rounded-[24px]"
+      className="overflow-hidden rounded-[22px]"
       style={{
-        border: "1px solid rgba(117,133,100,0.18)",
-        boxShadow: "0 4px 20px rgba(62,62,49,0.08)",
+        boxShadow: "none",
       }}
     >
       {/* ── Dark sage header — time + date ── */}

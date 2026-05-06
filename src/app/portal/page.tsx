@@ -17,6 +17,7 @@ import {
 } from "@/lib/portal/queries";
 import { ServiceCard } from "@/components/portal/ServiceCard";
 import { TodaySessionCard } from "@/components/portal/TodaySessionCard";
+import { BorderRotate } from "@/components/ui/BorderRotate";
 
 export default async function PortalHomePage() {
   const me = await getCurrentClient().catch(() => null);
@@ -85,7 +86,22 @@ async function PortalHomeContent({
         loyalty={loyalty}
         nextBooking={nextBooking}
       />
-      {todayBooking && <TodaySessionCard booking={todayBooking} />}
+      {todayBooking && (
+        <BorderRotate
+          animationMode="auto-rotate"
+          animationSpeed={4}
+          borderWidth={2}
+          borderRadius={24}
+          backgroundColor="#f2efe9"
+          gradientColors={{
+            primary:   "#2e3d22",
+            secondary: "#758564",
+            accent:    "#d4dcc8",
+          }}
+        >
+          <TodaySessionCard booking={todayBooking} />
+        </BorderRotate>
+      )}
     </>
   );
 }
