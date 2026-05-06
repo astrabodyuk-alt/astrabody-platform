@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Menu,
   X,
   LogOut,
   Gift,
@@ -21,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface DrawerSection {
   title: string;
@@ -95,9 +95,16 @@ export function PortalTopBar({ clientName }: { clientName?: string }) {
           type="button"
           aria-label="Open menu"
           onClick={() => setOpen(true)}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-olive transition-colors hover:bg-olive/5 active:bg-olive/10"
+          className="transition-opacity active:opacity-70"
         >
-          <Menu size={22} strokeWidth={1.6} />
+          <Avatar className="h-9 w-9 ring-1 ring-olive/15 ring-offset-1 ring-offset-cream">
+            <AvatarFallback
+              className="text-[12px] font-semibold text-cream"
+              style={{ background: "linear-gradient(135deg, #758564, #4a5c38)" }}
+            >
+              {initials}
+            </AvatarFallback>
+          </Avatar>
         </button>
       </header>
 
@@ -136,12 +143,14 @@ export function PortalTopBar({ clientName }: { clientName?: string }) {
           style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.09)" }}
         >
           {/* Avatar */}
-          <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[15px] font-semibold text-cream"
-            style={{ background: "linear-gradient(135deg, #758564, #4a5c38)" }}
-          >
-            {initials}
-          </div>
+          <Avatar className="h-12 w-12 shrink-0 ring-1 ring-white/20">
+            <AvatarFallback
+              className="text-[15px] font-semibold text-cream"
+              style={{ background: "linear-gradient(135deg, #758564, #4a5c38)" }}
+            >
+              {initials}
+            </AvatarFallback>
+          </Avatar>
           <div className="flex-1">
             <p className="text-[15px] font-semibold text-white">
               {clientName || "Your profile"}
