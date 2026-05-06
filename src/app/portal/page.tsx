@@ -1,14 +1,22 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Calendar, ChevronRight, ArrowRight, Star } from "lucide-react";
+import {
+  Calendar,
+  ChevronRight,
+  ArrowRight,
+  Star,
+} from "lucide-react";
 import { format } from "date-fns";
 import {
   getCurrentClient,
   getLoyaltyAccount,
   getNextBooking,
+  type NextBookingView,
+  type LoyaltyView,
 } from "@/lib/portal/queries";
 import { ServiceCard } from "@/components/portal/ServiceCard";
+import { TodaySessionCard } from "@/components/portal/TodaySessionCard";
 
 export default async function PortalHomePage() {
   const me = await getCurrentClient().catch(() => null);
@@ -16,9 +24,9 @@ export default async function PortalHomePage() {
 
   return (
     <div className="flex min-h-[calc(100dvh-56px-86px)] flex-col gap-5 px-4 pb-16 pt-5">
-      {/* Hero card */}
+      {/* Hero + Today's session share one Suspense boundary — one round-trip */}
       <Suspense fallback={<HeroSkeleton />}>
-        <HeroCard clientId={me.id} firstName={me.firstName} />
+        <PortalHomeContent clientId={me.id} firstName={me.firstName} />
       </Suspense>
 
       {/* Services */}
@@ -45,9 +53,9 @@ export default async function PortalHomePage() {
   );
 }
 
-// ─── Hero Card ────────────────────────────────────────────────────────────────
+// ─── Data + layout wrapper ─────────────────────────────────────────────────────
 
-async function HeroCard({
+async function PortalHomeContent({
   clientId,
   firstName,
 }: {
@@ -59,6 +67,40 @@ async function HeroCard({
     getNextBooking(clientId),
   ]);
 
+  // TODO: remove mock — testing TodaySessionCard display
+  const todayBooking: NextBookingView = nextBooking ?? {
+    bookingId: "test",
+    startsAt: new Date(new Date().setHours(19, 0, 0, 0)).toISOString(),
+    service: "EMS Body Sculpting",
+    staffName: "Tove",
+    durationMin: 30,
+    resourceName: null,
+    canReschedule: false,
+  };
+
+  return (
+    <>
+      <HeroCard
+        firstName={firstName}
+        loyalty={loyalty}
+        nextBooking={nextBooking}
+      />
+      {todayBooking && <TodaySessionCard booking={todayBooking} />}
+    </>
+  );
+}
+
+// ─── Hero Card ────────────────────────────────────────────────────────────────
+
+function HeroCard({
+  firstName,
+  loyalty,
+  nextBooking,
+}: {
+  firstName: string;
+  loyalty: LoyaltyView;
+  nextBooking: NextBookingView | null;
+}) {
   const greeting = getGreeting();
   const tierLabel = loyalty.tier ?? "Friend";
   const points = loyalty.currentPoints ?? 0;
@@ -230,4 +272,17 @@ function getGreeting() {
   if (h < 12) return "Good morning";
   if (h < 18) return "Good afternoon";
   return "Good evening";
+}
+
+/**
+ * Returns true when an ISO timestamp falls on today's date in Europe/London.
+ * Using en-CA locale gives "YYYY-MM-DD" format — safe for direct comparison.
+ */
+function isBookingToday(isoString: string): boolean {
+  const tz = "Europe/London";
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+  const bookingDay = new Date(isoString).toLocaleDateString("en-CA", {
+    timeZone: tz,
+  });
+  return today === bookingDay;
 }
