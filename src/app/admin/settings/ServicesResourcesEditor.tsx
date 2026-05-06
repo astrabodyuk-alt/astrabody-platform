@@ -11,6 +11,7 @@ import {
   deleteServiceResource,
   updateRescheduleCutoff,
 } from "./actions";
+import { Toggle } from "@/components/ui/toggle";
 
 export interface ResourceRow {
   id: string;
@@ -346,39 +347,5 @@ function ResourceEditor({
         </p>
       )}
     </div>
-  );
-}
-
-function Toggle({
-  checked,
-  onChange,
-  disabled,
-  label,
-}: {
-  checked: boolean;
-  onChange: () => void;
-  disabled?: boolean;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={onChange}
-      disabled={disabled}
-      className={cn(
-        "relative h-[27px] w-[44px] flex-shrink-0 rounded-full transition-colors duration-200 ease-ios disabled:opacity-50",
-        checked ? "bg-sage" : "bg-[#E9E9EA]"
-      )}
-    >
-      <span
-        className={cn(
-          "absolute top-[2px] h-[23px] w-[23px] rounded-full bg-white transition-transform duration-200 ease-ios shadow-[0_2px_6px_rgba(0,0,0,0.15)]",
-          checked ? "translate-x-[19px]" : "translate-x-[2px]"
-        )}
-      />
-    </button>
   );
 }

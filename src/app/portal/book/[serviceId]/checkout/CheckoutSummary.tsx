@@ -6,6 +6,7 @@ import { cn, formatGBP, formatPoints } from "@/lib/utils";
 import { pointsForPrice } from "@/lib/loyalty/constants";
 import type { CombineResult, VoucherForCombiner } from "@/lib/loyalty/price-combiner";
 import type { WalletVoucher } from "@/lib/loyalty/wallet";
+import { Toggle } from "@/components/ui/toggle";
 
 interface Props {
   serviceName: string;
@@ -260,37 +261,5 @@ function Row({
       </span>
       <span className="text-[14px] tabular-nums text-olive">{value}</span>
     </div>
-  );
-}
-
-function Toggle({
-  checked,
-  onChange,
-  label,
-}: {
-  checked: boolean;
-  onChange: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={onChange}
-      className={cn(
-        "relative h-[31px] w-[51px] flex-shrink-0 overflow-hidden rounded-full transition-colors duration-200 ease-ios",
-        checked ? "bg-sage" : "bg-[#E9E9EA]"
-      )}
-    >
-      <span
-        className={cn(
-          "absolute left-0 top-[2px] h-[27px] w-[27px] rounded-full bg-white transition-transform duration-200 ease-ios",
-          "shadow-[0_3px_8px_rgba(0,0,0,0.15),0_1px_1px_rgba(0,0,0,0.16)]",
-          checked ? "translate-x-[22px]" : "translate-x-[2px]"
-        )}
-      />
-    </button>
   );
 }

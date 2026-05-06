@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { updateCancellationPolicy } from "./actions";
+import { Toggle } from "@/components/ui/toggle";
 
 interface PolicyShape {
   enabled: boolean;
@@ -213,41 +214,6 @@ function Slider({
         className="h-2 w-full appearance-none rounded-full bg-cream-deep accent-sage disabled:opacity-50"
       />
     </div>
-  );
-}
-
-function Toggle({
-  checked,
-  onChange,
-  label,
-  disabled,
-}: {
-  checked: boolean;
-  onChange: () => void;
-  label: string;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={onChange}
-      disabled={disabled}
-      className={cn(
-        "relative h-[31px] w-[51px] flex-shrink-0 rounded-full transition-colors duration-200 ease-ios disabled:opacity-50",
-        checked ? "bg-sage" : "bg-[#E9E9EA]"
-      )}
-    >
-      <span
-        className={cn(
-          "absolute top-[2px] h-[27px] w-[27px] rounded-full bg-white transition-transform duration-200 ease-ios",
-          "shadow-[0_3px_8px_rgba(0,0,0,0.15),0_1px_1px_rgba(0,0,0,0.16)]",
-          checked ? "translate-x-[22px]" : "translate-x-[2px]"
-        )}
-      />
-    </button>
   );
 }
 

@@ -8,6 +8,7 @@ import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 import { ensurePushSubscription } from "@/lib/web-push/client";
 import { updateClientProfile } from "./actions";
+import { Toggle } from "@/components/ui/toggle";
 
 /**
  * /portal/me settings sub-section.
@@ -129,7 +130,7 @@ export function SettingsSection({
             Occasional Astrabody updates by email. Always quiet.
           </span>
         </div>
-        <Toggle checked={marketing} onChange={toggleMarketing} />
+        <Toggle checked={marketing} onChange={toggleMarketing} label="Marketing opt-in" />
       </div>
 
       <Divider />
@@ -220,6 +221,10 @@ export function SettingsSection({
   );
 }
 
+function Divider() {
+  return <div className="h-px w-full bg-hairline" aria-hidden />;
+}
+
 function NotificationsRow() {
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">(
     "default"
@@ -282,45 +287,6 @@ function NotificationsRow() {
       />
     </div>
   );
-}
-
-function Toggle({
-  checked,
-  onChange,
-  label,
-  disabled,
-}: {
-  checked: boolean;
-  onChange: () => void;
-  label?: string;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label ?? "Toggle"}
-      onClick={onChange}
-      disabled={disabled}
-      className={cn(
-        "relative h-[31px] w-[51px] flex-shrink-0 overflow-hidden rounded-full transition-colors duration-200 ease-ios disabled:opacity-40",
-        checked ? "bg-sage" : "bg-[#DDD8D0]"
-      )}
-    >
-      <span
-        className={cn(
-          "absolute top-[2px] h-[27px] w-[27px] rounded-full bg-white transition-transform duration-200 ease-ios",
-          "shadow-[0_2px_5px_rgba(0,0,0,0.20)]",
-          checked ? "translate-x-[22px]" : "translate-x-[2px]"
-        )}
-      />
-    </button>
-  );
-}
-
-function Divider() {
-  return <div className="h-px w-full bg-hairline" aria-hidden />;
 }
 
 /** Hour picker — 8am to 9pm in 1h steps. */

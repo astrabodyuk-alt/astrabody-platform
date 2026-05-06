@@ -19,6 +19,7 @@ import {
   uploadCoverImage,
   uploadProductAsset,
 } from "./actions";
+import { Toggle } from "@/components/ui/toggle";
 
 interface ProductRow {
   id: string;
@@ -500,37 +501,5 @@ function Field({
       </span>
       {children}
     </label>
-  );
-}
-
-function Toggle({
-  checked,
-  onChange,
-  label,
-}: {
-  checked: boolean;
-  onChange: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={onChange}
-      className={cn(
-        "relative h-[31px] w-[51px] flex-shrink-0 rounded-full transition-colors duration-200 ease-ios",
-        checked ? "bg-sage" : "bg-[#E9E9EA]"
-      )}
-    >
-      <span
-        className={cn(
-          "absolute top-[2px] h-[27px] w-[27px] rounded-full bg-white transition-transform duration-200 ease-ios",
-          "shadow-[0_3px_8px_rgba(0,0,0,0.15),0_1px_1px_rgba(0,0,0,0.16)]",
-          checked ? "translate-x-[22px]" : "translate-x-[2px]"
-        )}
-      />
-    </button>
   );
 }
