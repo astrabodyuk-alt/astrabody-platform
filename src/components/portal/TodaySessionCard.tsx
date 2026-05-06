@@ -1,7 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Activity, Snowflake, Bike, Sparkles } from "lucide-react";
+import {
+  Activity, Snowflake, Bike, Sparkles,
+  Droplets, Apple, Shirt, Clock,
+  Wine, Droplet, Scissors, Sun, Ban,
+} from "lucide-react";
 import { format } from "date-fns";
 import type { NextBookingView } from "@/lib/portal/queries";
 
@@ -22,34 +26,34 @@ const SERVICE_COLORS: Record<string, { iconColor: string; iconBg: string }> = {
 };
 
 interface Tip {
-  icon: string;
+  Icon: React.ElementType;
   text: string;
 }
 
 const SESSION_TIPS: Record<string, Tip[]> = {
   bike: [
-    { icon: "💧", text: "Drink a good glass of water before you get in — you'll sweat" },
-    { icon: "🍌", text: "A light snack an hour before is fine; skip the heavy meals" },
-    { icon: "👕", text: "Wear loose, breathable clothing — it gets warm in there" },
-    { icon: "⏰", text: "Aim to arrive 5 minutes early to settle in comfortably" },
+    { Icon: Droplets, text: "Drink a good glass of water before you get in — you'll sweat" },
+    { Icon: Apple,    text: "A light snack an hour before is fine; skip the heavy meals" },
+    { Icon: Shirt,    text: "Wear loose, breathable clothing — it gets warm in there" },
+    { Icon: Clock,    text: "Aim to arrive 5 minutes early to settle in comfortably" },
   ],
   ems: [
-    { icon: "💧", text: "Hydrate well — good hydration really improves muscle response" },
-    { icon: "🥗", text: "No large meals within 2 hours; a light snack is absolutely fine" },
-    { icon: "👗", text: "Fitted clothing works best for proper electrode contact" },
-    { icon: "⏰", text: "Arrive 5 minutes early so we can get you prepped" },
+    { Icon: Droplets, text: "Hydrate well — good hydration really improves muscle response" },
+    { Icon: Apple,    text: "No large meals within 2 hours; a light snack is absolutely fine" },
+    { Icon: Shirt,    text: "Fitted clothing works best for proper electrode contact" },
+    { Icon: Clock,    text: "Arrive 5 minutes early so we can get you prepped" },
   ],
   fat: [
-    { icon: "🚫", text: "Avoid alcohol for 24 hours before — it can affect the results" },
-    { icon: "💧", text: "Hydrate well the day before and the morning of your session" },
-    { icon: "👚", text: "Loose, comfortable clothing that you can easily adjust" },
-    { icon: "🧴", text: "Moisturise the treatment area the night before, not the morning of" },
+    { Icon: Wine,     text: "Avoid alcohol for 24 hours before — it can affect the results" },
+    { Icon: Droplets, text: "Hydrate well the day before and the morning of your session" },
+    { Icon: Shirt,    text: "Loose, comfortable clothing that you can easily adjust" },
+    { Icon: Droplet,  text: "Moisturise the treatment area the night before, not the morning of" },
   ],
   laser: [
-    { icon: "🪒", text: "Shave the area the day before — not the morning of your appointment" },
-    { icon: "☀️", text: "Avoid sun exposure for 48 hours before coming in" },
-    { icon: "🚫", text: "No waxing or threading — shaving only in the weeks leading up" },
-    { icon: "🧴", text: "Come with clean, product-free skin — no fake tan or heavy creams" },
+    { Icon: Scissors, text: "Shave the area the day before — not the morning of your appointment" },
+    { Icon: Sun,      text: "Avoid sun exposure for 48 hours before coming in" },
+    { Icon: Ban,      text: "No waxing or threading — shaving only in the weeks leading up" },
+    { Icon: Droplet,  text: "Come with clean, product-free skin — no fake tan or heavy creams" },
   ],
 };
 
@@ -158,7 +162,7 @@ export function TodaySessionCard({ booking }: { booking: NextBookingView }) {
       </div>
 
       {/* ── Pre-session tips with stagger animation ── */}
-      <div className="px-5 py-4" style={{ background: "#f9f7f3" }}>
+      <div className="px-4 pb-4 pt-3" style={{ background: "#f2efe9" }}>
         <p
           className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]"
           style={{ color: colors.iconColor }}
@@ -168,7 +172,7 @@ export function TodaySessionCard({ booking }: { booking: NextBookingView }) {
 
         <motion.ul
           role="list"
-          className="flex flex-col gap-2.5"
+          className="flex flex-col gap-2"
           variants={listVariants}
           initial="hidden"
           animate="visible"
@@ -178,16 +182,17 @@ export function TodaySessionCard({ booking }: { booking: NextBookingView }) {
               key={i}
               role="listitem"
               variants={itemVariants}
-              className="flex items-start gap-3 rounded-[14px] px-3 py-2.5"
-              style={{ background: "rgba(117,133,100,0.06)" }}
+              className="flex items-center gap-3 rounded-[14px] px-3 py-3"
+              style={{ background: "rgba(255,255,255,0.72)", border: "1px solid rgba(117,133,100,0.10)" }}
             >
-              <span
-                className="mt-0.5 shrink-0 text-[15px] leading-none"
-                aria-hidden="true"
+              {/* Icon box */}
+              <div
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                style={{ background: colors.iconBg }}
               >
-                {tip.icon}
-              </span>
-              <span className="text-[12px] leading-relaxed text-olive/65">
+                <tip.Icon size={16} strokeWidth={1.6} style={{ color: colors.iconColor }} />
+              </div>
+              <span className="text-[12.5px] leading-snug text-olive/70">
                 {tip.text}
               </span>
             </motion.li>
