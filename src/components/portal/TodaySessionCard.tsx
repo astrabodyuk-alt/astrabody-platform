@@ -5,6 +5,7 @@ import {
   Activity, Snowflake, Bike, Sparkles,
   Droplets, Apple, Shirt, Clock,
   Wine, Droplet, Scissors, Sun, Ban,
+  UtensilsCrossed, Zap, Coffee,
 } from "lucide-react";
 import { format } from "date-fns";
 import type { NextBookingView } from "@/lib/portal/queries";
@@ -31,29 +32,99 @@ interface Tip {
 }
 
 const SESSION_TIPS: Record<string, Tip[]> = {
+  /**
+   * InfraBike — Source: Astrabody Nutrition Blueprint, Section 05
+   * Pre-session: 500ml water 90 min before (not right before), light carb-forward snack.
+   * Post-session: 750ml water + electrolytes within the hour.
+   */
   bike: [
-    { Icon: Droplets, text: "Drink a good glass of water before you get in — you'll sweat" },
-    { Icon: Apple,    text: "A light snack an hour before is fine; skip the heavy meals" },
-    { Icon: Shirt,    text: "Wear loose, breathable clothing — it gets warm in there" },
-    { Icon: Clock,    text: "Aim to arrive 5 minutes early to settle in comfortably" },
+    {
+      Icon: Droplets,
+      text: "Drink 500ml of water 90 minutes before — not right before, or it'll feel heavy in the pod",
+    },
+    {
+      Icon: Apple,
+      text: "Half a banana with almond butter, 90 min before — you need the carbs. You'll sweat properly.",
+    },
+    {
+      Icon: Shirt,
+      text: "Loose, breathable clothing — the pod reaches temperatures that make you genuinely sweat",
+    },
+    {
+      Icon: Zap,
+      text: "After: 750ml water + pinch of sea salt + squeeze of lemon within the hour. Replenish what you lost.",
+    },
   ],
+
+  /**
+   * EMS Body Sculpting — Source: Astrabody Nutrition Blueprint, Section 05
+   * Pre-session: real meal 2h before (protein + carb + veg). 150–200ml water + pinch salt 30 min before.
+   * Post-session golden window: 30g protein within 45 min.
+   */
   ems: [
-    { Icon: Droplets, text: "Hydrate well — good hydration really improves muscle response" },
-    { Icon: Apple,    text: "No large meals within 2 hours; a light snack is absolutely fine" },
-    { Icon: Shirt,    text: "Fitted clothing works best for proper electrode contact" },
-    { Icon: Clock,    text: "Arrive 5 minutes early so we can get you prepped" },
+    {
+      Icon: UtensilsCrossed,
+      text: "Eat a proper meal 2 hours before — protein + carb + vegetables. 30,000 contractions need real fuel.",
+    },
+    {
+      Icon: Droplets,
+      text: "30 minutes before: 150–200ml water with a pinch of salt. Nothing to eat after that.",
+    },
+    {
+      Icon: Shirt,
+      text: "Fitted clothing only — loose fabric reduces electrode contact and weakens your results",
+    },
+    {
+      Icon: Zap,
+      text: "Golden window: within 45 minutes after, have 30g of protein (shake, eggs, chicken). Your muscles absorb fastest right now.",
+    },
   ],
+
+  /**
+   * Fat Freezing — Source: Astrabody Nutrition Blueprint, Section 05
+   * Pre-session: light protein + carb 90 min before. 500ml water in the hour before.
+   * No alcohol 24h before. Post-session: warm herbal tea, no cold food/drink 2h.
+   */
   fat: [
-    { Icon: Wine,     text: "Avoid alcohol for 24 hours before — it can affect the results" },
-    { Icon: Droplets, text: "Hydrate well the day before and the morning of your session" },
-    { Icon: Shirt,    text: "Loose, comfortable clothing that you can easily adjust" },
-    { Icon: Droplet,  text: "Moisturise the treatment area the night before, not the morning of" },
+    {
+      Icon: Apple,
+      text: "90 minutes before: Greek yoghurt + berries, or a boiled egg on rye. Light — you'll be lying down for 45 minutes.",
+    },
+    {
+      Icon: Droplets,
+      text: "Drink 500ml water the hour before — the cold works faster on well-hydrated fat cells",
+    },
+    {
+      Icon: Wine,
+      text: "No alcohol for 24 hours before — it slows the treatment results by up to 30%",
+    },
+    {
+      Icon: Coffee,
+      text: "After your session: warm herbal tea (ginger or turmeric). No cold food or drink for at least 2 hours.",
+    },
   ],
+
+  /**
+   * Laser Hair Removal — Source: KB/05_diode_laser_technical.md + standard clinical protocols
+   * Shave day before. No sun 48h. No waxing. Clean, product-free skin.
+   */
   laser: [
-    { Icon: Scissors, text: "Shave the area the day before — not the morning of your appointment" },
-    { Icon: Sun,      text: "Avoid sun exposure for 48 hours before coming in" },
-    { Icon: Ban,      text: "No waxing or threading — shaving only in the weeks leading up" },
-    { Icon: Droplet,  text: "Come with clean, product-free skin — no fake tan or heavy creams" },
+    {
+      Icon: Scissors,
+      text: "Shave the treatment area the day before — not the morning of your appointment",
+    },
+    {
+      Icon: Sun,
+      text: "No sun exposure for 48 hours before — tanned skin increases risk and reduces effectiveness",
+    },
+    {
+      Icon: Ban,
+      text: "No waxing or threading — only shaving in the 6 weeks leading up to your sessions",
+    },
+    {
+      Icon: Droplet,
+      text: "Come with clean, product-free skin — no fake tan, perfume or heavy creams on the area",
+    },
   ],
 };
 
