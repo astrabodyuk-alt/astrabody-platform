@@ -132,12 +132,11 @@ export default async function PortalMePage() {
   return (
     <div className="px-4 pt-4 pb-8">
       {/* Header — same shape as /portal home */}
-      <header className="mb-2 flex items-center justify-between px-2 py-3">
+      <header className="mb-2 px-2 py-3">
         <h1 className="font-serif text-[26px] font-medium leading-tight tracking-tight text-olive">
           {greeting},{" "}
           <span className="font-normal text-olive-soft">{me.firstName}</span>
         </h1>
-        <Avatar initials={me.initials} />
       </header>
 
       {/* Loyalty hero */}
@@ -340,20 +339,6 @@ function relativeDate(iso: string): string {
     return formatDistanceToNow(d, { addSuffix: true });
   }
   return format(d, "d MMM");
-}
-
-function Avatar({ initials }: { initials: string }) {
-  return (
-    <div
-      className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-medium tracking-snug text-cream"
-      style={{
-        background: "linear-gradient(135deg, #758564, #5C6B4E)",
-      }}
-      aria-label="Account"
-    >
-      {initials}
-    </div>
-  );
 }
 
 function getGreeting() {
