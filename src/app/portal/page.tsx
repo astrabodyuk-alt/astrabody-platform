@@ -15,7 +15,7 @@ export default async function PortalHomePage() {
   if (!me) redirect("/portal/login");
 
   return (
-    <div className="flex min-h-[calc(100dvh-56px-86px)] flex-col gap-5 px-4 pb-8 pt-5">
+    <div className="flex min-h-[calc(100dvh-56px-86px)] flex-col gap-5 px-4 pb-16 pt-5">
       {/* Hero card */}
       <Suspense fallback={<HeroSkeleton />}>
         <HeroCard clientId={me.id} firstName={me.firstName} />
