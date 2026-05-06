@@ -81,8 +81,9 @@ export function CheckoutClient(props: Props) {
   const packActive = !!props.useClientPackageId;
 
   const [applyRewards, setApplyRewards] = useState(true);
-  // Save-card consent. UNCHECKED by default — explicit consent only.
-  const [saveCard, setSaveCard] = useState(false);
+  // Save-card consent. CHECKED by default — card on file is the standard
+  // for all paid bookings (no-show protection). Client can uncheck.
+  const [saveCard, setSaveCard] = useState(true);
   // Express-checkout: returning client wants to use the saved card.
   // Defaults to true if a saved card exists; client can hit "Use a
   // different card" to fall back to Stripe Elements.
@@ -451,9 +452,6 @@ function PaidCheckoutForm({
           {error}
         </p>
       )}
-      <p className="text-center text-[11px] text-olive-faint">
-        Secured by Stripe · 256-bit encryption
-      </p>
     </form>
   );
 }
@@ -576,22 +574,52 @@ function SaveCardConsent({
   onChange: (next: boolean) => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-start gap-3 rounded-[12px] border-[0.5px] border-hairline bg-white px-4 py-3">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 h-4 w-4 flex-shrink-0 accent-sage"
-      />
-      <span className="flex flex-col gap-1">
-        <span className="text-[13px] leading-snug text-olive">
-          Save my card for future bookings (one-tap rebooking, auto-charge if I don&rsquo;t show)
+    <div className="flex flex-col gap-2">
+      {/* Stripe security notice */}
+      <div className="flex items-start gap-2.5 rounded-[12px] border-[0.5px] border-sage/20 bg-sage/5 px-4 py-3">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          className="mt-0.5 h-4 w-4 shrink-0 text-sage"
+          aria-hidden
+        >
+          <path
+            fillRule="evenodd"
+            d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
+            clipRule="evenodd"
+          />
+        </svg>
+        <div>
+          <p className="text-[12px] font-medium leading-snug text-sage-deep">
+            Your card details are held by Stripe, not Astrabody.
+          </p>
+          <p className="mt-0.5 text-[11px] leading-snug text-olive-soft">
+            We never see or store your full card number. Stripe is PCI-DSS Level 1
+            certified — the highest standard in the industry.
+          </p>
+        </div>
+      </div>
+
+      {/* Save-card checkbox */}
+      <label className="flex cursor-pointer items-start gap-3 rounded-[12px] border-[0.5px] border-hairline bg-white px-4 py-3">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="mt-0.5 h-4 w-4 flex-shrink-0 accent-sage"
+        />
+        <span className="flex flex-col gap-1">
+          <span className="text-[13px] leading-snug text-olive">
+            Save my card for one-tap rebooking
+          </span>
+          <span className="text-[11px] text-olive-faint">
+            We may charge a late-cancellation or no-show fee per our policy.
+            Remove your card any time in Settings.
+          </span>
         </span>
-        <span className="text-[11px] text-olive-faint">
-          You can remove your card any time from /portal/account.
-        </span>
-      </span>
-    </label>
+      </label>
+    </div>
   );
 }
 
