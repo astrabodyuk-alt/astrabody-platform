@@ -2,12 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  ToggleIcon,
-  LockUnlockIcon,
-  PlayPauseIcon,
-  SendIcon,
-} from "@/components/portal/icons/AnimatedIcons";
+import { Activity, Snowflake, Bike, Sparkles } from "lucide-react";
 
 interface ServiceCardProps {
   href: string;
@@ -17,10 +12,10 @@ interface ServiceCardProps {
 }
 
 const ICONS: Record<ServiceCardProps["iconKey"], React.ReactNode> = {
-  ems:   <ToggleIcon    size={28} color="#758564" duration={2400} />,
-  fat:   <LockUnlockIcon size={28} color="#758564" duration={3000} />,
-  bike:  <PlayPauseIcon  size={28} color="#758564" duration={2800} />,
-  laser: <SendIcon       size={28} color="#758564" duration={2600} />,
+  ems:   <Activity  size={22} strokeWidth={1.4} className="text-sage" />,
+  fat:   <Snowflake size={22} strokeWidth={1.4} className="text-sage" />,
+  bike:  <Bike      size={22} strokeWidth={1.4} className="text-sage" />,
+  laser: <Sparkles  size={22} strokeWidth={1.4} className="text-sage" />,
 };
 
 export function ServiceCard({ href, title, subtitle, iconKey }: ServiceCardProps) {
@@ -32,7 +27,7 @@ export function ServiceCard({ href, title, subtitle, iconKey }: ServiceCardProps
         transition={{ type: "spring", stiffness: 400, damping: 22 }}
         className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-sm"
       >
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sage/8">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sage/8">
           {ICONS[iconKey]}
         </div>
         <div>
