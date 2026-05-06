@@ -54,7 +54,7 @@ export default async function PortalMePage() {
         .order("cost_points", { ascending: true }),
       supabase
         .from("clients")
-        .select("full_name, marketing_opt_in, birth_date")
+        .select("full_name, marketing_opt_in, birth_date, preferred_start_hour, preferred_end_hour")
         .eq("id", me.id)
         .maybeSingle(),
       supabase
@@ -91,10 +91,14 @@ export default async function PortalMePage() {
     full_name: null,
     marketing_opt_in: false,
     birth_date: null,
+    preferred_start_hour: null,
+    preferred_end_hour: null,
   }) as {
     full_name: string | null;
     marketing_opt_in: boolean;
     birth_date: string | null;
+    preferred_start_hour: number | null;
+    preferred_end_hour: number | null;
   };
 
   const pastBookings = ((pastBookingsResult.data ?? []) as unknown as Array<{
@@ -242,6 +246,8 @@ export default async function PortalMePage() {
         initialFullName={profile.full_name ?? ""}
         initialMarketingOptIn={profile.marketing_opt_in ?? false}
         initialBirthDate={profile.birth_date}
+        initialPreferredStartHour={profile.preferred_start_hour}
+        initialPreferredEndHour={profile.preferred_end_hour}
       />
     </div>
   );

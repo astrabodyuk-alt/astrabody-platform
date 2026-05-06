@@ -1,0 +1,27 @@
+name: Keep portal warm
+
+# Pings the portal every 10 minutes during Astrabody business hours
+# (Mon–Sat 8am–9pm UK = 7am–8pm UTC in summer, 8am–9pm UTC in winter).
+# This prevents Vercel serverless cold starts so the PWA opens instantly.
+#
+# GitHub Actions free tier budget: ~194 min/month (well within 2,000 min limit).
+# Each run takes < 30 s.
+
+on:
+  schedule:
+    # Every 10 min, 7am–21:00 UTC, Mon–Sat (covers BST and GMT windows)
+    - cron: '*/10 7-21 * * 1-6'
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Ping portal health endpoint
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 20 \
+            https://astrabody.co.uk/api/_health)
+          echo "Status: $STATUS"
+          # Also ping the login page to warm the auth middleware path
+          curl -s -o /dev/null --max-time 20 https://astrabody.co.uk/portal/login

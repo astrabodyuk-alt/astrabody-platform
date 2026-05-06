@@ -23,17 +23,23 @@ export function SettingsSection({
   initialFullName,
   initialMarketingOptIn,
   initialBirthDate,
+  initialPreferredStartHour,
+  initialPreferredEndHour,
 }: {
   initialFullName: string;
   initialMarketingOptIn: boolean;
   initialBirthDate: string | null;
+  initialPreferredStartHour: number | null;
+  initialPreferredEndHour: number | null;
 }) {
   const router = useRouter();
   const [fullName, setFullName] = useState(initialFullName);
   const [marketing, setMarketing] = useState(initialMarketingOptIn);
   const [birthday, setBirthday] = useState(initialBirthDate ?? "");
+  const [prefStart, setPrefStart] = useState<number | null>(initialPreferredStartHour);
+  const [prefEnd, setPrefEnd] = useState<number | null>(initialPreferredEndHour);
   const [savingName, setSavingName] = useState(false);
-  const [savedFlag, setSavedFlag] = useState<"name" | "marketing" | "birthday" | null>(null);
+  const [savedFlag, setSavedFlag] = useState<"name" | "marketing" | "birthday" | "hours" | null>(null);
 
   async function saveName() {
     setSavingName(true);
@@ -64,6 +70,17 @@ export function SettingsSection({
     const result = await updateClientProfile({ birth_date: date || null });
     if (result.ok) {
       setSavedFlag("birthday");
+      setTimeout(() => setSavedFlag(null), 1500);
+    }
+  }
+
+  async function savePreferredHours(start: number | null, end: number | null) {
+    const result = await updateClientProfile({
+      preferred_start_hour: start,
+      preferred_end_hour: end,
+    });
+    if (result.ok) {
+      setSavedFlag("hours");
       setTimeout(() => setSavedFlag(null), 1500);
     }
   }
@@ -138,6 +155,46 @@ export function SettingsSection({
         <span className="text-[11px] tracking-snug text-olive-faint">
           We&rsquo;ll credit 500 pts on the day, every year.
         </span>
+      </div>
+
+      <Divider />
+
+      {/* Preferred booking hours */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-start justify-between">
+          <div className="flex flex-col">
+            <span className="text-[14px] font-medium tracking-snug text-olive">
+              Preferred booking hours
+            </span>
+            <span className="text-[12px] tracking-snug text-olive-soft">
+              We&rsquo;ll highlight slots that fit your schedule.
+            </span>
+          </div>
+          {savedFlag === "hours" && (
+            <span className="shrink-0 text-[11px] font-medium uppercase tracking-label-caps text-sage">
+              Saved ✓
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <HourSelect
+            value={prefStart}
+            placeholder="From"
+            onChange={(h) => {
+              setPrefStart(h);
+              savePreferredHours(h, prefEnd);
+            }}
+          />
+          <span className="text-[12px] text-olive-soft">to</span>
+          <HourSelect
+            value={prefEnd}
+            placeholder="Until"
+            onChange={(h) => {
+              setPrefEnd(h);
+              savePreferredHours(prefStart, h);
+            }}
+          />
+        </div>
       </div>
 
       <Divider />
@@ -264,4 +321,42 @@ function Toggle({
 
 function Divider() {
   return <div className="h-px w-full bg-hairline" aria-hidden />;
+}
+
+/** Hour picker — 8am to 9pm in 1h steps. */
+const HOUR_OPTIONS: { value: number; label: string }[] = Array.from(
+  { length: 14 },
+  (_, i) => {
+    const h = i + 8; // 8–21
+    const period = h < 12 ? "am" : "pm";
+    const display = h === 12 ? 12 : h % 12;
+    return { value: h, label: `${display}:00 ${period}` };
+  }
+);
+
+function HourSelect({
+  value,
+  placeholder,
+  onChange,
+}: {
+  value: number | null;
+  placeholder: string;
+  onChange: (h: number | null) => void;
+}) {
+  return (
+    <select
+      value={value ?? ""}
+      onChange={(e) =>
+        onChange(e.target.value === "" ? null : parseInt(e.target.value, 10))
+      }
+      className="h-11 flex-1 appearance-none rounded-[12px] border-[0.5px] border-hairline-strong bg-white px-3 text-[14px] text-olive shadow-1 focus:outline-none focus:ring-1 focus:ring-sage/40"
+    >
+      <option value="">{placeholder}</option>
+      {HOUR_OPTIONS.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
 }

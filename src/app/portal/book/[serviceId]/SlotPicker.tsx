@@ -44,6 +44,8 @@ export function SlotPicker({
   staffName,
   resourceId,
   activePack,
+  preferredStartHour,
+  preferredEndHour,
 }: {
   serviceId: string;
   serviceName: string;
@@ -69,10 +71,31 @@ export function SlotPicker({
     sessionsRemaining: number;
     sessionsTotal: number;
   } | null;
+  /**
+   * Client's preferred booking window (local hour, 0-23).
+   * Slots that fall within this range get a subtle sage dot indicator.
+   */
+  preferredStartHour?: number | null;
+  preferredEndHour?: number | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [usePack, setUsePack] = useState<boolean>(!!activePack);
+  const hasPreference =
+    preferredStartHour != null && preferredEndHour != null;
+
+  function isPreferred(iso: string): boolean {
+    if (!hasPreference) return false;
+    const hour = parseInt(
+      new Date(iso).toLocaleTimeString("en-GB", {
+        hour: "numeric",
+        hour12: false,
+        timeZone: TZ,
+      }),
+      10
+    );
+    return hour >= preferredStartHour! && hour < preferredEndHour!;
+  }
 
   const days = useMemo(() => buildDays(DAYS), []);
 
@@ -188,16 +211,24 @@ export function SlotPicker({
           </div>
         )}
         {!loading && slots.length > 0 && (
-          <div className="grid grid-cols-3 gap-2">
-            {slots.map((iso) => (
-              <TimePill
-                key={iso}
-                iso={iso}
-                selected={selectedTime === iso}
-                onSelect={() => setSelectedTime(iso)}
-              />
-            ))}
-          </div>
+          <>
+            {hasPreference && slots.some(isPreferred) && (
+              <p className="mb-3 text-[12px] tracking-snug text-sage">
+                ✦ Your preferred hours are highlighted
+              </p>
+            )}
+            <div className="grid grid-cols-3 gap-2">
+              {slots.map((iso) => (
+                <TimePill
+                  key={iso}
+                  iso={iso}
+                  selected={selectedTime === iso}
+                  preferred={isPreferred(iso)}
+                  onSelect={() => setSelectedTime(iso)}
+                />
+              ))}
+            </div>
+          </>
         )}
       </div>
 
@@ -422,10 +453,12 @@ function DayStrip({
 function TimePill({
   iso,
   selected,
+  preferred,
   onSelect,
 }: {
   iso: string;
   selected: boolean;
+  preferred?: boolean;
   onSelect: () => void;
 }) {
   const label = new Date(iso)
@@ -442,14 +475,22 @@ function TimePill({
       type="button"
       onClick={onSelect}
       className={cn(
-        "ax-tap h-12 rounded-full border-[0.5px] text-[14px] font-medium tabular-nums transition-all duration-200 ease-ios",
+        "ax-tap relative h-12 rounded-full border-[0.5px] text-[14px] font-medium tabular-nums transition-all duration-200 ease-ios",
         selected
           ? "border-transparent bg-sage text-cream"
+          : preferred
+          ? "border-sage/50 bg-sage/8 text-olive hover:bg-sage/12"
           : "border-hairline-strong bg-white text-olive hover:bg-cream-deep"
       )}
       aria-pressed={selected}
     >
       {label}
+      {preferred && !selected && (
+        <span
+          aria-hidden
+          className="absolute right-2.5 top-1.5 h-1.5 w-1.5 rounded-full bg-sage"
+        />
+      )}
     </button>
   );
 }

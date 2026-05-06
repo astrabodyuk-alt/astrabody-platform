@@ -426,6 +426,8 @@ export interface UpdateProfileInput {
   full_name?: string;
   marketing_opt_in?: boolean;
   birth_date?: string | null;
+  preferred_start_hour?: number | null;
+  preferred_end_hour?: number | null;
 }
 
 export type UpdateProfileResult =
@@ -454,6 +456,12 @@ export async function updateClientProfile(
     update.birth_date = input.birth_date && input.birth_date.length > 0
       ? input.birth_date
       : null;
+  }
+  if (input.preferred_start_hour !== undefined) {
+    update.preferred_start_hour = input.preferred_start_hour;
+  }
+  if (input.preferred_end_hour !== undefined) {
+    update.preferred_end_hour = input.preferred_end_hour;
   }
   if (Object.keys(update).length === 0) return { ok: true };
 

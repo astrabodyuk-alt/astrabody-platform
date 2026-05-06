@@ -163,10 +163,21 @@ export default async function BookSlotPage({
     sessionsRemaining: number;
     sessionsTotal: number;
   } | null = null;
-  if (!reward) {
-    const portalCtx = await getPortalContext().catch(() => null);
-    if (portalCtx) {
-      const allPacks = await getActivePacksForClient(portalCtx.clientId);
+  // Preferred hours — highlight slots that match the client's preferred window.
+  let preferredStartHour: number | null = null;
+  let preferredEndHour: number | null = null;
+
+  const portalCtx = await getPortalContext().catch(() => null);
+  if (portalCtx) {
+    const [allPacks, prefResult] = await Promise.all([
+      !reward ? getActivePacksForClient(portalCtx.clientId) : Promise.resolve([]),
+      supabase
+        .from("clients")
+        .select("preferred_start_hour, preferred_end_hour")
+        .eq("id", portalCtx.clientId)
+        .maybeSingle(),
+    ]);
+    if (!reward) {
       const matching = allPacks.filter((p) => p.serviceId === serviceId);
       if (matching.length > 0) {
         const p = matching[0]; // already sorted by expires_at asc
@@ -178,6 +189,12 @@ export default async function BookSlotPage({
         };
       }
     }
+    const prefs = prefResult.data as {
+      preferred_start_hour: number | null;
+      preferred_end_hour: number | null;
+    } | null;
+    preferredStartHour = prefs?.preferred_start_hour ?? null;
+    preferredEndHour = prefs?.preferred_end_hour ?? null;
   }
 
   const stepLabel = resources.length >= 2 ? "Step 4 of 5" : "Step 3 of 4";
@@ -222,6 +239,8 @@ export default async function BookSlotPage({
         staffName={chosenLabel}
         resourceId={resourceIdForApi}
         activePack={activePackForService}
+        preferredStartHour={preferredStartHour}
+        preferredEndHour={preferredEndHour}
       />
     </div>
   );
