@@ -22,12 +22,27 @@ import { formatDistanceToNowStrict } from "date-fns";
  * straight into the slot-picker for the bound service, carrying the
  * reward query param through.
  */
+/** Maps ?filter= key → keywords that match against service names (lowercase). */
+const FILTER_KEYWORDS: Record<string, string[]> = {
+  ems:   ["ems", "sculpt", "suprasculpt"],
+  fat:   ["fat", "freez", "cryo"],
+  bike:  ["infra", "bike"],
+  laser: ["laser", "hair"],
+};
+
+function matchesFilter(serviceName: string, filter: string): boolean {
+  const keywords = FILTER_KEYWORDS[filter];
+  if (!keywords) return true; // unknown filter → show all
+  const lower = serviceName.toLowerCase();
+  return keywords.some((kw) => lower.includes(kw));
+}
+
 export default async function PortalBookPage({
   searchParams,
 }: {
-  searchParams: Promise<{ reward?: string; ref?: string }>;
+  searchParams: Promise<{ reward?: string; ref?: string; filter?: string }>;
 }) {
-  const { reward } = await searchParams;
+  const { reward, filter } = await searchParams;
   // The ?ref=<code> query string is captured by middleware (which sets
   // the 7-day astra_ref cookie). The page itself doesn't read or write
   // the cookie — server components can't mutate cookies during render.
@@ -57,6 +72,19 @@ export default async function PortalBookPage({
     ]);
   } catch {
     redirect("/portal/login");
+  }
+
+  // If a category filter is present, narrow the list.
+  // If exactly one service matches, skip the picker entirely.
+  if (filter) {
+    const filtered = services.filter((s) => matchesFilter(s.name, filter));
+    if (filtered.length === 1) {
+      redirect(`/portal/book/${filtered[0]!.id}`);
+    }
+    if (filtered.length > 0) {
+      services = filtered;
+    }
+    // If nothing matched (e.g. service removed from DB), fall through and show all.
   }
 
   return (
