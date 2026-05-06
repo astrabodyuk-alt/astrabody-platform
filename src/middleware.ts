@@ -67,12 +67,29 @@ export async function middleware(request: NextRequest) {
         setAll(
           cookiesToSet: Array<{ name: string; value: string; options?: CookieOptions }>
         ) {
+          // 1. Write refreshed tokens onto the *request* object so that
+          //    request.cookies.getAll() reflects them below.
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
+          );
+          // 2. Rebuild the Cookie header from the now-updated request.cookies
+          //    so that server components in THIS render receive the fresh
+          //    tokens — not the expired ones that arrived from the browser.
+          //    Without this step, getCurrentClient() calls auth.getUser()
+          //    with the old, expired access token and throws "no session",
+          //    causing the portal to redirect to /login after every hour.
+          requestHeaders.set(
+            "cookie",
+            request.cookies
+              .getAll()
+              .map((c) => `${c.name}=${c.value}`)
+              .join("; ")
           );
           response = NextResponse.next({
             request: { headers: requestHeaders },
           });
+          // 3. Set the refreshed cookies on the outgoing response so the
+          //    browser stores the fresh tokens for subsequent requests.
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           );
