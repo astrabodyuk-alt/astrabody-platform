@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { Sparkles, Users } from "lucide-react";
 import { ControlledSendIcon } from "@/components/portal/icons/AnimatedIcons";
 import { cn } from "@/lib/utils";
+import { LiquidCard } from "@/components/ui/card";
 import { portalAssistantChat } from "@/lib/portal-assistant/actions";
 import {
   assistantBookingHandoffUrl,
@@ -224,50 +225,56 @@ export function AIChatClient() {
         )}
       </div>
 
-      {/* Thread */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
-        {thread.length === 0 ? (
-          <StarterChips onPick={(text) => send(text)} />
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {thread.map((item) => (
-              <li key={item.id}>
-                <ThreadRow item={item} onPickSlot={(card, slot) => pickSlot(card, slot)} />
-              </li>
-            ))}
-            {pending && <li><ThinkingBubble /></li>}
-          </ul>
-        )}
-      </div>
-
-      {error && (
-        <div className="border-t border-destructive/30 bg-destructive/5 px-4 py-2 text-[12px] text-destructive">
-          {error}
-        </div>
-      )}
-
-      {/* Input */}
-      <form
-        onSubmit={(e) => { e.preventDefault(); send(draft); }}
-        className="flex items-center gap-2 border-t border-olive/10 bg-sand px-3 py-3"
+      {/* Thread + Input wrapped in LiquidCard glass effect */}
+      <LiquidCard
+        wrapperClassName="mx-3 mb-3 mt-2 flex-1 overflow-hidden flex flex-col min-h-0"
+        className="flex-1 overflow-hidden border-white/10 p-0 flex flex-col min-h-0"
       >
-        <input
-          ref={inputRef}
-          type="text"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Ask me anything…"
-          className="min-w-0 flex-1 rounded-full border border-olive/15 bg-cream px-4 py-2.5 text-[14px] text-olive placeholder:text-olive-soft/70 focus:border-sage focus:outline-none focus:ring-1 focus:ring-sage"
-        />
-        <button
-          type="submit"
-          aria-label="Send"
-          disabled={pending || !draft.trim()}
-          className="flex size-11 items-center justify-center rounded-full bg-sage text-cream transition-transform active:scale-95 disabled:opacity-50"
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4" style={{ minHeight: 0, flex: 1 }}>
+          {thread.length === 0 ? (
+            <StarterChips onPick={(text) => send(text)} />
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {thread.map((item) => (
+                <li key={item.id}>
+                  <ThreadRow item={item} onPickSlot={(card, slot) => pickSlot(card, slot)} />
+                </li>
+              ))}
+              {pending && <li><ThinkingBubble /></li>}
+            </ul>
+          )}
+        </div>
+
+        {error && (
+          <div className="border-t border-destructive/30 bg-destructive/5 px-4 py-2 text-[12px] text-destructive">
+            {error}
+          </div>
+        )}
+
+        {/* Input */}
+        <form
+          onSubmit={(e) => { e.preventDefault(); send(draft); }}
+          className="flex items-center gap-2 border-t border-white/10 px-3 py-3"
+          style={{ background: "rgba(255,255,255,0.06)" }}
         >
-          <ControlledSendIcon sent={justSent} size={18} color="currentColor" />
-        </button>
-      </form>
+          <input
+            ref={inputRef}
+            type="text"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Ask me anything…"
+            className="min-w-0 flex-1 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-[14px] text-olive placeholder:text-olive/50 focus:border-sage/60 focus:outline-none focus:ring-1 focus:ring-sage/40 backdrop-blur-sm"
+          />
+          <button
+            type="submit"
+            aria-label="Send"
+            disabled={pending || !draft.trim()}
+            className="flex size-11 items-center justify-center rounded-full bg-sage text-cream transition-transform active:scale-95 disabled:opacity-50"
+          >
+            <ControlledSendIcon sent={justSent} size={18} color="currentColor" />
+          </button>
+        </form>
+      </LiquidCard>
     </div>
   );
 }
