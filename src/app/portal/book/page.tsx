@@ -178,34 +178,51 @@ export default async function PortalBookPage({
               href={`/portal/book/${svc.id}`}
               className="block focus-visible:outline-none"
             >
-              <div className="group relative overflow-hidden rounded-[20px] bg-sand transition-transform active:scale-[0.97]">
-                {/* Photo */}
+              <div
+                className="group relative overflow-hidden rounded-[20px] transition-transform active:scale-[0.97]"
+                style={{ height: 200 }}
+              >
+                {/* Full-bleed photo */}
                 {photo && (
                   <div
-                    className="h-[110px] w-full bg-cover bg-center"
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
                     style={{ backgroundImage: `url('${photo}')` }}
-                  >
-                    <div className="h-full w-full" style={{
-                      background: "linear-gradient(to bottom, rgba(20,32,14,0.08) 0%, rgba(20,32,14,0.32) 100%)"
-                    }} />
-                  </div>
+                  />
                 )}
-                {/* Text */}
-                <div className="p-3.5 pb-4">
-                  <h3 className="font-serif text-[16px] font-medium leading-snug tracking-tight text-olive">
+
+                {/* Dark gradient overlay */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "linear-gradient(to top, rgba(14,22,10,0.88) 0%, rgba(14,22,10,0.35) 50%, transparent 80%)",
+                  }}
+                />
+
+                {/* Text content pinned to bottom */}
+                <div className="absolute inset-x-0 bottom-0 p-3.5">
+                  <h3 className="font-serif text-[15px] font-medium leading-snug tracking-tight text-white">
                     {svc.name}
                   </h3>
                   {tagline && (
-                    <p className="mt-0.5 text-[11px] tracking-snug text-olive/50">
+                    <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.10em] text-white/55">
                       {tagline}
                     </p>
                   )}
-                  <div className="mt-2.5 flex items-center justify-between">
-                    <span className="text-[12px] font-medium text-sage-deep">
+                  {/* Glassmorphism pill */}
+                  <div
+                    className="mt-2.5 flex items-center justify-between rounded-[10px] px-3 py-2 transition-colors group-hover:bg-white/20"
+                    style={{
+                      background: "rgba(255,255,255,0.12)",
+                      backdropFilter: "blur(12px)",
+                      border: "1px solid rgba(255,255,255,0.15)",
+                    }}
+                  >
+                    <span className="text-[11px] font-semibold tracking-wide text-white">
                       {svc.duration_min} min ·{" "}
                       {svc.price_pence === 0 ? "Free" : formatGBP(svc.price_pence)}
                     </span>
-                    <ChevronRight size={13} strokeWidth={2} className="text-olive/30" />
+                    <ChevronRight size={11} strokeWidth={2.5} className="text-white/70" />
                   </div>
                 </div>
               </div>
