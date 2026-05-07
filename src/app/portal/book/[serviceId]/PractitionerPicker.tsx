@@ -28,12 +28,12 @@ export function PractitionerPicker({
   const baseQuery = rewardId ? `&reward=${encodeURIComponent(rewardId)}` : "";
 
   return (
-    <div className="-mx-4 overflow-x-auto px-4 pb-2 md:mx-0 md:overflow-visible md:px-0">
-      <ul className="flex min-w-max gap-3 md:grid md:min-w-0 md:grid-cols-3">
-        <li className="md:contents">
+    <div>
+      <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        <li>
           <Link
             href={`/portal/book/${serviceId}?staff=any${baseQuery}`}
-            className="block w-[168px] focus-visible:outline-none md:w-auto"
+            className="block focus-visible:outline-none"
           >
             <PractitionerCard
               variant="any"
@@ -43,10 +43,10 @@ export function PractitionerPicker({
           </Link>
         </li>
         {staff.map((s) => (
-          <li key={s.id} className="md:contents">
+          <li key={s.id}>
             <Link
               href={`/portal/book/${serviceId}?staff=${encodeURIComponent(s.id)}${baseQuery}`}
-              className="block w-[168px] focus-visible:outline-none md:w-auto"
+              className="block focus-visible:outline-none"
             >
               <PractitionerCard
                 variant="staff"
