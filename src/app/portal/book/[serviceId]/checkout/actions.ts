@@ -13,6 +13,7 @@ import { combinePrice } from "@/lib/loyalty/price-combiner";
 import { checkSlotAgainstBlocks } from "@/lib/scheduling/holidays";
 import { claimReferralOnFirstBooking } from "@/lib/referrals/actions";
 import { ensureIntakeResponseForBooking } from "@/lib/forms/actions";
+import { validateFlashSlot, claimFlashSlot } from "@/lib/flash-slots/queries";
 
 interface CreateInput {
   serviceId: string;
@@ -72,6 +73,12 @@ interface CreateInput {
    * rather than silently falling through.
    */
   giftCardCode?: string | null;
+  /**
+   * Flash slot id. When provided, server validates the deal is still
+   * active + not expired + not fully claimed, then overrides pricePence
+   * and depositPence with flash_price_pence.
+   */
+  flashSlotId?: string | null;
 }
 
 export type CreateBookingResult =
@@ -269,6 +276,18 @@ export async function createBookingAndIntent(
     pricePence = 0;
     depositPence = 0;
     consumedPackId = pack.id as string;
+  }
+
+  // Flash slot — validates and overrides price (cannot stack with packs/redemptions).
+  let validatedFlashSlotId: string | null = null;
+  if (input.flashSlotId && !validRedemptionId && !consumedPackId) {
+    const flashResult = await validateFlashSlot(input.flashSlotId, serviceId, tenantId);
+    if (!flashResult.valid) {
+      return { ok: false, error: flashResult.reason };
+    }
+    pricePence = flashResult.flashPricePence;
+    depositPence = 0; // Flash deals are charged in full, no deposit split
+    validatedFlashSlotId = input.flashSlotId;
   }
 
   const baseAmount = depositPence > 0 ? depositPence : pricePence;
@@ -493,6 +512,13 @@ export async function createBookingAndIntent(
       booking_id: booking.id as string,
       display_label: `Spent on ${service.name}`,
     });
+  }
+
+  // Claim the flash slot (increment claims_count, auto-set fully_claimed).
+  if (validatedFlashSlotId) {
+    await claimFlashSlot(validatedFlashSlotId).catch((e) =>
+      console.warn("[flash] claimFlashSlot failed", e)
+    );
   }
 
   // Claim a pending referral cookie if this is the client's first

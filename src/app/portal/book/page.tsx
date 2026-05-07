@@ -10,6 +10,7 @@ import { getCurrentClient } from "@/lib/portal/queries";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { formatGBP } from "@/lib/utils";
 import { formatDistanceToNowStrict } from "date-fns";
+import { getActiveFlashSlotsForPortal } from "@/lib/flash-slots/queries";
 
 // ── Service card visuals ────────────────────────────────────────────────────
 const SERVICE_CARD_MAP: {
@@ -98,17 +99,22 @@ export default async function PortalBookPage({
   const me = await getCurrentClient().catch(() => null);
   if (!me) redirect("/portal/login");
 
-  // Run services fetch and "your usual" lookup in parallel.
+  // Run services fetch, "your usual" lookup, and flash slots in parallel.
   let services;
   let yourUsual = null;
+  let flashSlots: Awaited<ReturnType<typeof getActiveFlashSlotsForPortal>> = [];
   try {
-    [services, yourUsual] = await Promise.all([
+    [services, yourUsual, flashSlots] = await Promise.all([
       getActiveServicesForCurrentTenant(),
       pickYourUsual(me.id),
+      getActiveFlashSlotsForPortal().catch(() => []),
     ]);
   } catch {
     redirect("/portal/login");
   }
+
+  // Build a map serviceId → flash slot for quick lookup in the card grid
+  const flashByService = new Map(flashSlots.map((f) => [f.serviceId, f]));
 
   // If a category filter is present, narrow the list.
   // If exactly one service matches, skip the picker entirely.
@@ -172,10 +178,14 @@ export default async function PortalBookPage({
       <div className="mt-4 grid grid-cols-2 gap-3">
         {services.map((svc) => {
           const { photo, tagline } = getServiceVisuals(svc.name);
+          const flash = flashByService.get(svc.id);
+          const flashHref = flash
+            ? `/portal/book/${svc.id}?flash=${flash.id}${flash.staffId ? `&staff=${flash.staffId}` : ""}`
+            : `/portal/book/${svc.id}`;
           return (
             <Link
               key={svc.id}
-              href={`/portal/book/${svc.id}`}
+              href={flashHref}
               className="block focus-visible:outline-none"
             >
               <div
@@ -199,6 +209,13 @@ export default async function PortalBookPage({
                   }}
                 />
 
+                {/* Flash badge (top-right) */}
+                {flash && (
+                  <div className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-olive shadow-sm">
+                    ⚡ {formatGBP(flash.flashPricePence)}
+                  </div>
+                )}
+
                 {/* Text content pinned to bottom */}
                 <div className="absolute inset-x-0 bottom-0 p-3.5">
                   <h3 className="font-serif text-[15px] font-medium leading-snug tracking-tight text-white">
@@ -220,7 +237,14 @@ export default async function PortalBookPage({
                   >
                     <span className="text-[11px] font-semibold tracking-wide text-white">
                       {svc.duration_min} min ·{" "}
-                      {svc.price_pence === 0 ? "Free" : formatGBP(svc.price_pence)}
+                      {flash ? (
+                        <>
+                          <span className="line-through opacity-60">{formatGBP(svc.price_pence)}</span>
+                          {" "}{formatGBP(flash.flashPricePence)}
+                        </>
+                      ) : (
+                        svc.price_pence === 0 ? "Free" : formatGBP(svc.price_pence)
+                      )}
                     </span>
                     <ChevronRight size={11} strokeWidth={2.5} className="text-white/70" />
                   </div>

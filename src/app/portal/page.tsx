@@ -18,6 +18,8 @@ import {
 import { ServiceCard } from "@/components/portal/ServiceCard";
 import { TodaySessionCard } from "@/components/portal/TodaySessionCard";
 import { BorderRotate } from "@/components/ui/BorderRotate";
+import { FlashDealCard } from "@/components/portal/FlashDealCard";
+import { getActiveFlashSlotsForPortal } from "@/lib/flash-slots/queries";
 
 export default async function PortalHomePage() {
   const me = await getCurrentClient().catch(() => null);
@@ -28,6 +30,11 @@ export default async function PortalHomePage() {
       {/* Hero + Today's session share one Suspense boundary — one round-trip */}
       <Suspense fallback={<HeroSkeleton />}>
         <PortalHomeContent clientId={me.id} firstName={me.firstName} />
+      </Suspense>
+
+      {/* Flash Deals — shown when admin has published a same-day deal */}
+      <Suspense fallback={null}>
+        <FlashDealsSection />
       </Suspense>
 
       {/* Services */}
@@ -247,6 +254,25 @@ function HeroCard({
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Flash Deals ──────────────────────────────────────────────────────────────
+
+async function FlashDealsSection() {
+  const slots = await getActiveFlashSlotsForPortal().catch(() => []);
+  if (slots.length === 0) return null;
+  return (
+    <section>
+      <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-olive/50">
+        ⚡ Today only
+      </p>
+      <div className="flex flex-col gap-3">
+        {slots.map((slot) => (
+          <FlashDealCard key={slot.id} slot={slot} />
+        ))}
+      </div>
+    </section>
   );
 }
 

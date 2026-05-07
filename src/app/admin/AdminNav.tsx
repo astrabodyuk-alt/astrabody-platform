@@ -9,6 +9,7 @@ const ITEMS = [
   { href: "/admin/bookings", label: "Bookings" },
   { href: "/admin/inbox", label: "Inbox" },
   { href: "/admin/clients", label: "Clients" },
+  { href: "/admin/flash-slots", label: "Flash" },
   { href: "/admin/loyalty", label: "Loyalty" },
   { href: "/admin/calendar", label: "Calendar" },
   { href: "/admin/settings", label: "Settings" },

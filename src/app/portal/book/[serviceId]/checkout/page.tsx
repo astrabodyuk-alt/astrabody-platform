@@ -36,6 +36,7 @@ export default async function CheckoutPage({
     staff?: string;
     pack?: string;
     resource?: string;
+    flash?: string;
   }>;
 }) {
   const { serviceId } = await params;
@@ -46,6 +47,7 @@ export default async function CheckoutPage({
     staff: staffParam,
     pack: packParam,
     resource: resourceParam,
+    flash: flashParam,
   } = await searchParams;
 
   const supabase = await createServerSupabase();
@@ -140,10 +142,20 @@ export default async function CheckoutPage({
     }
   }
 
+  // Flash slot price override (server-side pre-render so the client
+  // sees the correct amount before confirming payment).
+  let flashPricePence: number | null = null;
+  if (flashParam && !consumedPack && !redemption) {
+    const { validateFlashSlot } = await import("@/lib/flash-slots/queries");
+    const tenantId = portalContext?.tenantId ?? "";
+    const flashResult = await validateFlashSlot(flashParam, serviceId, tenantId).catch(() => null);
+    if (flashResult?.valid) flashPricePence = flashResult.flashPricePence;
+  }
+
   const effectivePricePence =
-    consumedPack || redemption ? 0 : service.price_pence;
+    consumedPack || redemption ? 0 : (flashPricePence ?? service.price_pence);
   const effectiveDepositPence =
-    consumedPack || redemption ? 0 : service.deposit_pence;
+    consumedPack || redemption ? 0 : (flashPricePence != null ? 0 : service.deposit_pence);
 
   // Pull the wallet so the CheckoutClient can compute line items + the
   // discounted Stripe amount on the server-rendered first paint. Skipped
@@ -236,6 +248,7 @@ export default async function CheckoutPage({
           useClientPackageId={consumedPack?.id ?? null}
           staffId={chosenStaffIdForAction}
           resourceId={resourceParam ?? null}
+          flashSlotId={flashParam ?? null}
           wallet={wallet}
           cancellationPolicy={{
             enabled: cancellationPolicy.enabled,

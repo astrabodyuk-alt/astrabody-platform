@@ -62,6 +62,10 @@ interface Props {
    * verbatim to the booking action; "any" tells the server to pick.
    */
   resourceId?: string | null;
+  /**
+   * Flash slot id — when set, server validates & applies the flash price.
+   */
+  flashSlotId?: string | null;
   /** Tenant cancellation policy — three-line summary above the Pay button. */
   cancellationPolicy: {
     enabled: boolean;
@@ -253,6 +257,7 @@ export function CheckoutClient(props: Props) {
         saveCard={saveCard}
         onToggleSaveCard={(v) => setSaveCard(v)}
         cancellationPolicy={props.cancellationPolicy}
+        flashSlotId={props.flashSlotId ?? null}
         applyVoucherIds={
           applyRewards && !redemptionActive ? combined.appliedVoucherIds : []
         }
@@ -280,6 +285,7 @@ interface SubmitInputs {
   staffId: string | null;
   useClientPackageId: string | null;
   resourceId: string | null;
+  flashSlotId: string | null;
   applyVoucherIds: string[];
   applyPoints: number;
   giftCardCode: string | null;
@@ -304,6 +310,7 @@ function PaidCheckoutForm({
   staffId,
   useClientPackageId,
   resourceId,
+  flashSlotId,
   applyVoucherIds,
   applyPoints,
   giftCardCode,
@@ -354,6 +361,7 @@ function PaidCheckoutForm({
       staffId,
       useClientPackageId,
       resourceId: (resourceId as string | "any" | null) ?? null,
+      flashSlotId: flashSlotId ?? null,
       applyVoucherIds,
       applyPoints,
       giftCardCode,
