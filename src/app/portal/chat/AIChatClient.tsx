@@ -157,80 +157,85 @@ export function AIChatClient() {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-56px-86px)] flex-col bg-cream">
-      {/* ── Hero header (dark sage gradient, matches home card) ── */}
-      <div
-        className="relative flex-shrink-0 overflow-hidden px-4 pb-4 pt-5"
-        style={{
-          background:
-            "linear-gradient(135deg, #BBC4AA 0%, #758564 45%, #3E4D2E 100%)",
-        }}
+    <div className="flex h-[calc(100dvh-56px-86px)] flex-col bg-cream px-3 pb-3 pt-3">
+      {/* ── Everything inside one LiquidCard ── */}
+      <LiquidCard
+        wrapperClassName="flex-1 overflow-hidden flex flex-col min-h-0"
+        className="flex-1 overflow-hidden border-white/15 p-0 flex flex-col min-h-0"
       >
-        {/* Subtle texture overlay */}
+        {/* ── Hero header ── */}
         <div
-          className="absolute inset-0 opacity-20"
+          className="relative flex-shrink-0 overflow-hidden rounded-t-xl px-4 pb-4 pt-5"
           style={{
-            backgroundImage:
-              "radial-gradient(circle at 70% 20%, rgba(255,255,255,0.15) 0%, transparent 60%)",
+            background:
+              "linear-gradient(135deg, #BBC4AA 0%, #758564 45%, #3E4D2E 100%)",
           }}
-        />
-
-        {/* Top row: sparkle icon + Team link */}
-        <div className="relative flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <span
-              className="flex size-8 items-center justify-center rounded-full text-[18px]"
-              style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)" }}
-            >
-              ✦
-            </span>
-            <div>
-              <p className="text-[15px] font-medium tracking-snug text-white">
-                Astrabody Assistant
-              </p>
-              <p className="text-[11px] text-white/60">Always here · replies instantly</p>
-            </div>
-          </div>
-          <Link
-            href="/portal/chat/team"
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-white/80 transition-colors hover:text-white"
+        >
+          {/* Glow */}
+          <div
+            className="absolute inset-0 opacity-25"
             style={{
-              background: "rgba(255,255,255,0.14)",
-              backdropFilter: "blur(10px)",
-              border: "1px solid rgba(255,255,255,0.18)",
+              backgroundImage:
+                "radial-gradient(circle at 70% 15%, rgba(255,255,255,0.25) 0%, transparent 55%)",
             }}
-          >
-            <Users size={12} strokeWidth={1.6} />
-            Team
-          </Link>
+          />
+
+          {/* Top row */}
+          <div className="relative flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <span
+                className="flex size-8 items-center justify-center rounded-full text-[18px]"
+                style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)" }}
+              >
+                ✦
+              </span>
+              <div>
+                <p className="text-[15px] font-medium tracking-snug text-white">
+                  Astrabody Assistant
+                </p>
+                <p className="text-[11px] text-white/60">Always here · replies instantly</p>
+              </div>
+            </div>
+            <Link
+              href="/portal/chat/team"
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-white/80 transition-colors hover:text-white"
+              style={{
+                background: "rgba(255,255,255,0.14)",
+                backdropFilter: "blur(10px)",
+                border: "1px solid rgba(255,255,255,0.18)",
+              }}
+            >
+              <Users size={12} strokeWidth={1.6} />
+              Team
+            </Link>
+          </div>
+
+          {/* Title pill */}
+          {thread.length === 0 && (
+            <div
+              className="relative mt-4 rounded-2xl px-4 py-3"
+              style={{
+                background: "rgba(255,255,255,0.10)",
+                backdropFilter: "blur(12px)",
+                border: "1px solid rgba(255,255,255,0.16)",
+              }}
+            >
+              <h2 className="font-serif text-[22px] font-medium leading-tight tracking-tight text-white">
+                How can I help you today?
+              </h2>
+              <p className="mt-0.5 text-[13px] text-white/60">
+                Ask me anything about your account.
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Glassmorphism prompt line */}
-        {thread.length === 0 && (
-          <div
-            className="relative mt-4 rounded-2xl px-4 py-3"
-            style={{
-              background: "rgba(255,255,255,0.10)",
-              backdropFilter: "blur(12px)",
-              border: "1px solid rgba(255,255,255,0.16)",
-            }}
-          >
-            <h2 className="font-serif text-[22px] font-medium leading-tight tracking-tight text-white">
-              How can I help you today?
-            </h2>
-            <p className="mt-0.5 text-[13px] text-white/60">
-              Ask me anything about your account.
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Thread + Input wrapped in LiquidCard glass effect */}
-      <LiquidCard
-        wrapperClassName="mx-3 mb-3 mt-2 flex-1 overflow-hidden flex flex-col min-h-0"
-        className="flex-1 overflow-hidden border-white/10 p-0 flex flex-col min-h-0"
-      >
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4" style={{ minHeight: 0, flex: 1 }}>
+        {/* ── Thread ── */}
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto px-4 py-4"
+          style={{ minHeight: 0 }}
+        >
           {thread.length === 0 ? (
             <StarterChips onPick={(text) => send(text)} />
           ) : (
@@ -251,11 +256,11 @@ export function AIChatClient() {
           </div>
         )}
 
-        {/* Input */}
+        {/* ── Input ── */}
         <form
           onSubmit={(e) => { e.preventDefault(); send(draft); }}
-          className="flex items-center gap-2 border-t border-white/10 px-3 py-3"
-          style={{ background: "rgba(255,255,255,0.06)" }}
+          className="flex flex-shrink-0 items-center gap-2 border-t border-white/10 px-3 py-3"
+          style={{ background: "rgba(255,255,255,0.05)" }}
         >
           <input
             ref={inputRef}
@@ -263,7 +268,7 @@ export function AIChatClient() {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Ask me anything…"
-            className="min-w-0 flex-1 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-[14px] text-olive placeholder:text-olive/50 focus:border-sage/60 focus:outline-none focus:ring-1 focus:ring-sage/40 backdrop-blur-sm"
+            className="min-w-0 flex-1 rounded-full border border-olive/15 bg-cream px-4 py-2.5 text-[14px] text-olive placeholder:text-olive-soft/70 focus:border-sage focus:outline-none focus:ring-1 focus:ring-sage"
           />
           <button
             type="submit"
