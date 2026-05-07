@@ -172,17 +172,19 @@ export function AIChatClient() {
     });
   }
 
-  // Top bar ≈ 56px. When keyboard is open, bottom nav is hidden (0px),
-  // so the available height = visualViewport.height - 56px.
-  // When keyboard is closed, fall back to the CSS calc.
-  const containerStyle = vpHeight
+  // Keyboard open → nav is hidden, fill the entire visible viewport minus topbar.
+  // Keyboard closed → fit within the space above the bottom nav.
+  //   56px  = topbar height
+  //   100px = portal layout pb-[100px] (the bottom nav floating zone)
+  const isKeyboardOpen = vpHeight !== null && vpHeight < window.screen.height * 0.75;
+  const containerStyle = isKeyboardOpen && vpHeight
     ? { height: `${vpHeight - 56}px` }
-    : undefined;
+    : { height: "calc(100dvh - 56px - 100px)" };
 
   return (
     <div
       className="flex flex-col bg-cream px-3 pb-3 pt-3"
-      style={containerStyle ?? { height: "calc(100dvh - 56px - 86px)" }}
+      style={containerStyle}
     >
       {/* ── Everything inside one LiquidCard ── */}
       <LiquidCard

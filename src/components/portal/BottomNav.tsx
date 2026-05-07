@@ -40,23 +40,37 @@ const SHOP_ITEM: NavItem = {
 export function BottomNav({ showShop = false }: { showShop?: boolean }) {
   const pathname = usePathname() ?? "/";
 
-  // Hide the nav when the software keyboard is open on the chat page.
-  // visualViewport shrinks when the keyboard appears; if it's >25% smaller
-  // than the screen height we consider the keyboard open.
+  // On chat page: hide when keyboard is open (visualViewport) OR when an
+  // input element is focused (catches iOS lag between focus and vp resize).
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   useEffect(() => {
+    if (!pathname.startsWith("/portal/chat")) return;
+
     const vv = window.visualViewport;
-    if (!vv) return;
-    const handler = () => {
-      setKeyboardOpen(vv.height < window.screen.height * 0.75);
+    const onVp = () => {
+      if (vv) setKeyboardOpen(vv.height < window.screen.height * 0.75);
     };
-    vv.addEventListener("resize", handler);
-    return () => vv.removeEventListener("resize", handler);
-  }, []);
+    const onFocusIn = (e: FocusEvent) => {
+      if ((e.target as HTMLElement)?.tagName === "INPUT") setKeyboardOpen(true);
+    };
+    const onFocusOut = (e: FocusEvent) => {
+      if ((e.target as HTMLElement)?.tagName === "INPUT") {
+        // Delay so the viewport has time to resize before we re-show the nav
+        setTimeout(() => setKeyboardOpen(false), 200);
+      }
+    };
+
+    vv?.addEventListener("resize", onVp);
+    document.addEventListener("focusin", onFocusIn);
+    document.addEventListener("focusout", onFocusOut);
+    return () => {
+      vv?.removeEventListener("resize", onVp);
+      document.removeEventListener("focusin", onFocusIn);
+      document.removeEventListener("focusout", onFocusOut);
+    };
+  }, [pathname]);
 
   if (pathname.startsWith("/portal/login")) return null;
-  // On chat page, hide entirely while keyboard is open so input sits flush
-  // at the bottom of the visible viewport.
   if (pathname.startsWith("/portal/chat") && keyboardOpen) return null;
 
   const items: NavItem[] = showShop
