@@ -23,6 +23,21 @@ export function PortalServiceWorkerRegistry() {
         if (cancelled) return;
         console.info("[pwa] service worker registered, scope:", reg.scope);
 
+        // Check for a waiting SW and activate it immediately so new
+        // cache versions kick in without requiring a tab close.
+        if (reg.waiting) {
+          reg.waiting.postMessage({ type: "SKIP_WAITING" });
+        }
+        reg.addEventListener("updatefound", () => {
+          const newSw = reg.installing;
+          if (!newSw) return;
+          newSw.addEventListener("statechange", () => {
+            if (newSw.state === "installed" && navigator.serviceWorker.controller) {
+              newSw.postMessage({ type: "SKIP_WAITING" });
+            }
+          });
+        });
+
         // If permission was already granted in a prior visit but the
         // subscription has been cleared (private mode, "Clear data",
         // browser sync wipe), re-register it.
