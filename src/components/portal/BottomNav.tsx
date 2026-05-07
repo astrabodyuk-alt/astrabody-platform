@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -39,7 +40,24 @@ const SHOP_ITEM: NavItem = {
 export function BottomNav({ showShop = false }: { showShop?: boolean }) {
   const pathname = usePathname() ?? "/";
 
+  // Hide the nav when the software keyboard is open on the chat page.
+  // visualViewport shrinks when the keyboard appears; if it's >25% smaller
+  // than the screen height we consider the keyboard open.
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const handler = () => {
+      setKeyboardOpen(vv.height < window.screen.height * 0.75);
+    };
+    vv.addEventListener("resize", handler);
+    return () => vv.removeEventListener("resize", handler);
+  }, []);
+
   if (pathname.startsWith("/portal/login")) return null;
+  // On chat page, hide entirely while keyboard is open so input sits flush
+  // at the bottom of the visible viewport.
+  if (pathname.startsWith("/portal/chat") && keyboardOpen) return null;
 
   const items: NavItem[] = showShop
     ? [BASE_ITEMS[0], BASE_ITEMS[1], BASE_ITEMS[2], SHOP_ITEM, BASE_ITEMS[3]]

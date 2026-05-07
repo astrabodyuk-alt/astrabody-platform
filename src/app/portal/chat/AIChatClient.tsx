@@ -57,6 +57,22 @@ export function AIChatClient() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Track visual viewport height so the chat container resizes correctly
+  // when the software keyboard appears on mobile.
+  const [vpHeight, setVpHeight] = useState<number | null>(null);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setVpHeight(vv.height);
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -156,8 +172,18 @@ export function AIChatClient() {
     });
   }
 
+  // Top bar ≈ 56px. When keyboard is open, bottom nav is hidden (0px),
+  // so the available height = visualViewport.height - 56px.
+  // When keyboard is closed, fall back to the CSS calc.
+  const containerStyle = vpHeight
+    ? { height: `${vpHeight - 56}px` }
+    : undefined;
+
   return (
-    <div className="flex h-[calc(100dvh-56px-86px)] flex-col bg-cream px-3 pb-3 pt-3">
+    <div
+      className="flex flex-col bg-cream px-3 pb-3 pt-3"
+      style={containerStyle ?? { height: "calc(100dvh - 56px - 86px)" }}
+    >
       {/* ── Everything inside one LiquidCard ── */}
       <LiquidCard
         wrapperClassName="flex-1 overflow-hidden flex flex-col min-h-0"
