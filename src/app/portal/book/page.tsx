@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import {
   getActiveServicesForCurrentTenant,
@@ -10,6 +10,42 @@ import { getCurrentClient } from "@/lib/portal/queries";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { formatGBP } from "@/lib/utils";
 import { formatDistanceToNowStrict } from "date-fns";
+
+// ── Service card visuals ────────────────────────────────────────────────────
+const SERVICE_CARD_MAP: {
+  keywords: string[];
+  photo: string;
+  tagline: string;
+}[] = [
+  {
+    keywords: ["ems", "sculpt", "suprasculpt"],
+    photo: "/images/ems-sculpting.jpg",
+    tagline: "Tone muscle · reduce fat",
+  },
+  {
+    keywords: ["fat", "freez", "cryo"],
+    photo: "/images/fat-freezing.jpg",
+    tagline: "Permanent fat reduction",
+  },
+  {
+    keywords: ["infra", "bike"],
+    photo: "/images/infrabike-card.jpg",
+    tagline: "Infrared detox · calorie burn",
+  },
+  {
+    keywords: ["laser", "hair"],
+    photo: "/images/laser-hair.jpg",
+    tagline: "All skin tones · long-lasting",
+  },
+];
+
+function getServiceVisuals(name: string) {
+  const lower = name.toLowerCase();
+  const match = SERVICE_CARD_MAP.find((m) =>
+    m.keywords.some((kw) => lower.includes(kw))
+  );
+  return match ?? { photo: null, tagline: null };
+}
 
 /**
  * Step 1 of 3 — pick a service.
@@ -133,29 +169,49 @@ export default async function PortalBookPage({
         </Link>
       )}
 
-      <div className="mt-4 grid grid-cols-1 gap-3 min-[480px]:grid-cols-2">
-        {services.map((svc) => (
-          <Link
-            key={svc.id}
-            href={`/portal/book/${svc.id}`}
-            className="block focus-visible:outline-none"
-          >
-            <Card interactive className="flex h-full flex-col gap-2 p-5">
-              <h3 className="font-serif text-[18px] font-medium tracking-tight text-olive">
-                {svc.name}
-              </h3>
-              <p className="text-[13px] tracking-snug text-olive-soft">
-                {svc.duration_min} min ·{" "}
-                {svc.price_pence === 0 ? "Free" : formatGBP(svc.price_pence)}
-              </p>
-              {svc.deposit_pence > 0 && (
-                <span className="self-start rounded-full bg-cream-deep px-3 py-1 text-[12px] font-medium text-olive">
-                  {formatGBP(svc.deposit_pence)} deposit
-                </span>
-              )}
-            </Card>
-          </Link>
-        ))}
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        {services.map((svc) => {
+          const { photo, tagline } = getServiceVisuals(svc.name);
+          return (
+            <Link
+              key={svc.id}
+              href={`/portal/book/${svc.id}`}
+              className="block focus-visible:outline-none"
+            >
+              <div className="group relative overflow-hidden rounded-[20px] bg-sand transition-transform active:scale-[0.97]">
+                {/* Photo */}
+                {photo && (
+                  <div
+                    className="h-[110px] w-full bg-cover bg-center"
+                    style={{ backgroundImage: `url('${photo}')` }}
+                  >
+                    <div className="h-full w-full" style={{
+                      background: "linear-gradient(to bottom, rgba(20,32,14,0.08) 0%, rgba(20,32,14,0.32) 100%)"
+                    }} />
+                  </div>
+                )}
+                {/* Text */}
+                <div className="p-3.5 pb-4">
+                  <h3 className="font-serif text-[16px] font-medium leading-snug tracking-tight text-olive">
+                    {svc.name}
+                  </h3>
+                  {tagline && (
+                    <p className="mt-0.5 text-[11px] tracking-snug text-olive/50">
+                      {tagline}
+                    </p>
+                  )}
+                  <div className="mt-2.5 flex items-center justify-between">
+                    <span className="text-[12px] font-medium text-sage-deep">
+                      {svc.duration_min} min ·{" "}
+                      {svc.price_pence === 0 ? "Free" : formatGBP(svc.price_pence)}
+                    </span>
+                    <ChevronRight size={13} strokeWidth={2} className="text-olive/30" />
+                  </div>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
       {services.length === 0 && (

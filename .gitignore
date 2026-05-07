@@ -13,3 +13,4 @@ dist
 # MCP — project-level config carries the @21st-dev/magic API key in plain text.
 .mcp.json
 .claude/
+.env*.local
