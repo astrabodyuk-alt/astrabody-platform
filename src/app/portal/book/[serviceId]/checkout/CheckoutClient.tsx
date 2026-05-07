@@ -285,7 +285,7 @@ interface SubmitInputs {
   staffId: string | null;
   useClientPackageId: string | null;
   resourceId: string | null;
-  flashSlotId: string | null;
+  flashSlotId?: string | null;
   applyVoucherIds: string[];
   applyPoints: number;
   giftCardCode: string | null;
