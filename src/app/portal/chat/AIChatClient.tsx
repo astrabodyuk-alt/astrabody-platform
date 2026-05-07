@@ -156,31 +156,78 @@ export function AIChatClient() {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-56px-86px)] flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-hairline bg-cream px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="flex size-7 items-center justify-center rounded-full bg-sage/10 text-sage">
-            <Sparkles size={14} strokeWidth={1.6} />
-          </span>
-          <div>
-            <p className="text-[14px] font-medium tracking-snug text-olive">Astrabody Assistant</p>
-            <p className="text-[11px] text-olive-soft">Always here · replies instantly</p>
+    <div className="flex h-[calc(100dvh-56px-86px)] flex-col bg-cream">
+      {/* ── Hero header (dark sage gradient, matches home card) ── */}
+      <div
+        className="relative flex-shrink-0 overflow-hidden px-4 pb-4 pt-5"
+        style={{
+          background:
+            "linear-gradient(135deg, #BBC4AA 0%, #758564 45%, #3E4D2E 100%)",
+        }}
+      >
+        {/* Subtle texture overlay */}
+        <div
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 70% 20%, rgba(255,255,255,0.15) 0%, transparent 60%)",
+          }}
+        />
+
+        {/* Top row: sparkle icon + Team link */}
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span
+              className="flex size-8 items-center justify-center rounded-full text-[18px]"
+              style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)" }}
+            >
+              ✦
+            </span>
+            <div>
+              <p className="text-[15px] font-medium tracking-snug text-white">
+                Astrabody Assistant
+              </p>
+              <p className="text-[11px] text-white/60">Always here · replies instantly</p>
+            </div>
           </div>
+          <Link
+            href="/portal/chat/team"
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-white/80 transition-colors hover:text-white"
+            style={{
+              background: "rgba(255,255,255,0.14)",
+              backdropFilter: "blur(10px)",
+              border: "1px solid rgba(255,255,255,0.18)",
+            }}
+          >
+            <Users size={12} strokeWidth={1.6} />
+            Team
+          </Link>
         </div>
-        <Link
-          href="/portal/chat/team"
-          className="flex items-center gap-1.5 rounded-full border border-hairline-strong bg-white px-3 py-1.5 text-[12px] font-medium text-olive-soft hover:text-olive"
-        >
-          <Users size={12} strokeWidth={1.6} />
-          Team
-        </Link>
+
+        {/* Glassmorphism prompt line */}
+        {thread.length === 0 && (
+          <div
+            className="relative mt-4 rounded-2xl px-4 py-3"
+            style={{
+              background: "rgba(255,255,255,0.10)",
+              backdropFilter: "blur(12px)",
+              border: "1px solid rgba(255,255,255,0.16)",
+            }}
+          >
+            <h2 className="font-serif text-[22px] font-medium leading-tight tracking-tight text-white">
+              How can I help you today?
+            </h2>
+            <p className="mt-0.5 text-[13px] text-white/60">
+              Ask me anything about your account.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Thread */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
         {thread.length === 0 ? (
-          <EmptyState onPick={(text) => send(text)} />
+          <StarterChips onPick={(text) => send(text)} />
         ) : (
           <ul className="flex flex-col gap-3">
             {thread.map((item) => (
@@ -225,30 +272,22 @@ export function AIChatClient() {
   );
 }
 
-function EmptyState({ onPick }: { onPick: (text: string) => void }) {
+function StarterChips({ onPick }: { onPick: (text: string) => void }) {
   return (
-    <div className="flex flex-col items-center gap-5 pt-8">
-      <span className="flex size-14 items-center justify-center rounded-full bg-sage/10 text-[30px]">✦</span>
-      <div className="text-center">
-        <h2 className="font-serif text-[22px] font-medium tracking-tight text-olive">
-          How can I help you today?
-        </h2>
-        <p className="mt-1 text-[13px] text-olive-soft">Ask me anything about your account.</p>
-      </div>
-      <ul className="w-full flex flex-col gap-2">
-        {STARTER_CHIPS.map((chip) => (
-          <li key={chip}>
-            <button
-              type="button"
-              onClick={() => onPick(chip)}
-              className="flex min-h-[48px] w-full items-center justify-center rounded-full border border-sage/25 bg-white px-4 text-[14px] text-olive active:bg-sage/5"
-            >
-              {chip}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ul className="flex flex-col gap-2 pt-2">
+      {STARTER_CHIPS.map((chip) => (
+        <li key={chip}>
+          <button
+            type="button"
+            onClick={() => onPick(chip)}
+            className="flex min-h-[50px] w-full items-center justify-between rounded-2xl border border-olive/10 bg-white px-4 text-[14px] text-olive shadow-sm active:scale-[0.98] active:bg-sage/5 transition-transform"
+          >
+            <span>{chip}</span>
+            <span className="text-sage/60 text-[16px]">›</span>
+          </button>
+        </li>
+      ))}
+    </ul>
   );
 }
 
