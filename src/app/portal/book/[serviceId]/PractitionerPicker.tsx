@@ -2,25 +2,19 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { CalendarCheck } from "lucide-react";
+import { CalendarCheck, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PractitionerOption } from "@/lib/portal/booking-queries";
 
 /**
  * Practitioner picker (step 2 of 4 in the booking flow).
  *
- * Renders a row of cards — one per active staff who performs this
- * service — plus an "Any practitioner" option that lets the slot
- * picker fall back to the default staff (first by sort_order). The
- * selection is encoded in the URL so back/forward navigation feels
- * natural and links are shareable.
+ * DestinationCard-style: full-bleed photo/gradient background, overlay,
+ * glassmorphism footer with name + "Select →" CTA.
  *
  * Layout:
- *   - Mobile (< 768): horizontal scroll, fixed card width 168 px
+ *   - Mobile: horizontal scroll, fixed card width 168 px
  *   - ≥ 768: 3-column grid
- *
- * Selection visual: a subtle 2 px sage ring around the card (Apple
- * canonical). No new tokens.
  */
 export function PractitionerPicker({
   serviceId,
@@ -79,69 +73,104 @@ function PractitionerCard({
   subtitle: string | null;
   photoUrl?: string | null;
 }) {
+  const initials =
+    variant === "staff"
+      ? name
+          .trim()
+          .split(/\s+/)
+          .slice(0, 2)
+          .map((p) => p[0]?.toUpperCase() ?? "")
+          .join("")
+      : null;
+
   return (
     <div
       className={cn(
-        "ax-tap flex flex-col items-center gap-3 rounded-lg border-[0.5px] border-hairline-strong bg-white p-4 shadow-1",
-        "transition-all duration-200 ease-ios hover:shadow-2"
+        "group relative overflow-hidden rounded-[20px] transition-transform duration-200 active:scale-[0.97]",
+        "h-[220px] w-full"
       )}
     >
-      {variant === "any" ? (
-        <AnyPractitionerCircle />
-      ) : photoUrl ? (
+      {/* ── Background ── */}
+      {photoUrl ? (
         <Image
           src={photoUrl}
           alt={name}
-          width={88}
-          height={88}
-          className="h-[88px] w-[88px] rounded-full object-cover"
+          fill
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          sizes="168px"
+        />
+      ) : variant === "any" ? (
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(135deg, #BBC4AA 0%, #758564 60%, #3E4D2E 100%)",
+          }}
         />
       ) : (
-        <InitialsCircle name={name} />
-      )}
-      <h3 className="text-center font-serif text-[18px] font-medium tracking-tight text-olive">
-        {name}
-      </h3>
-      {subtitle && (
-        <span
-          className="rounded-full px-2.5 py-1 text-[11px] font-medium uppercase tracking-label-caps"
+        <div
+          className="absolute inset-0 flex items-start justify-end p-4"
           style={{
-            background: "rgba(117,133,100,0.10)",
-            color: "#5C6B4E",
+            background:
+              "linear-gradient(135deg, #758564 0%, #5C6B4E 60%, #3E4D2E 100%)",
           }}
         >
-          {subtitle}
-        </span>
+          {/* Large faded initials as texture */}
+          <span
+            className="font-serif text-[80px] font-medium leading-none text-white/10 select-none"
+            aria-hidden
+          >
+            {initials}
+          </span>
+        </div>
       )}
-    </div>
-  );
-}
 
-function InitialsCircle({ name }: { name: string }) {
-  const initials = name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase() ?? "")
-    .join("");
-  return (
-    <div
-      className="flex h-[88px] w-[88px] flex-shrink-0 items-center justify-center rounded-full text-[22px] font-medium tracking-snug text-cream"
-      style={{ background: "linear-gradient(135deg, #758564, #5C6B4E)" }}
-      aria-hidden
-    >
-      {initials || "✨"}
-    </div>
-  );
-}
+      {/* ── Dark gradient overlay ── */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(to top, rgba(14,22,10,0.88) 0%, rgba(14,22,10,0.40) 45%, transparent 75%)",
+        }}
+      />
 
-function AnyPractitionerCircle() {
-  return (
-    <div
-      className="flex h-[88px] w-[88px] flex-shrink-0 items-center justify-center rounded-full bg-cream-deep text-olive-soft"
-      aria-hidden
-    >
-      <CalendarCheck size={32} strokeWidth={1.6} />
+      {/* ── Content footer ── */}
+      <div className="absolute inset-x-0 bottom-0 p-3.5">
+        {variant === "any" && (
+          <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm">
+            <CalendarCheck size={17} strokeWidth={1.6} className="text-white" />
+          </div>
+        )}
+
+        <p className="font-serif text-[16px] font-medium leading-tight tracking-tight text-white">
+          {name}
+        </p>
+
+        {subtitle && (
+          <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-white/55">
+            {subtitle}
+          </p>
+        )}
+
+        {/* Glassmorphism CTA */}
+        <div
+          className="mt-2.5 flex items-center justify-between rounded-[10px] px-3 py-2 transition-colors group-hover:bg-white/20"
+          style={{
+            background: "rgba(255,255,255,0.12)",
+            backdropFilter: "blur(12px)",
+            border: "1px solid rgba(255,255,255,0.15)",
+          }}
+        >
+          <span className="text-[11px] font-semibold tracking-wide text-white">
+            Select
+          </span>
+          <ArrowRight
+            size={11}
+            strokeWidth={2.5}
+            className="text-white/70 transition-transform duration-200 group-hover:translate-x-0.5"
+          />
+        </div>
+      </div>
     </div>
   );
 }
