@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Clipboard, Check } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -52,6 +52,26 @@ export function RewardsGrid({ rewards, currentPoints, clientTier }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [state, setState] = useState<DialogState>({ kind: "closed" });
+  const [activeIdx, setActiveIdx] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const onScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || rewards.length === 0) return;
+    const cardW = el.scrollWidth / rewards.length;
+    const idx = Math.min(
+      Math.round(el.scrollLeft / cardW),
+      rewards.length - 1
+    );
+    setActiveIdx(idx);
+  }, [rewards.length]);
+
+  function scrollTo(i: number) {
+    const el = scrollRef.current;
+    if (!el) return;
+    const cardW = el.scrollWidth / rewards.length;
+    el.scrollTo({ left: cardW * i, behavior: "smooth" });
+  }
 
   function open(reward: Reward) {
     if (reward.kind === "gift_friend_session") {
@@ -106,16 +126,45 @@ export function RewardsGrid({ rewards, currentPoints, clientTier }: Props) {
 
   return (
     <>
-      <div className="space-y-3">
-        {rewards.map((reward) => (
-          <RewardCard
-            key={reward.id}
-            reward={reward}
-            currentPoints={currentPoints}
-            clientTier={clientTier}
-            onRedeem={() => open(reward)}
-          />
-        ))}
+      {/* ── Horizontal carousel ─────────────────────────────────────────── */}
+      <div className="-mx-4">
+        <div
+          ref={scrollRef}
+          onScroll={onScroll}
+          className="flex gap-3 overflow-x-auto scroll-smooth snap-x snap-mandatory px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {rewards.map((reward) => (
+            <RewardCard
+              key={reward.id}
+              reward={reward}
+              currentPoints={currentPoints}
+              clientTier={clientTier}
+              onRedeem={() => open(reward)}
+            />
+          ))}
+          {/* Right-edge breathing room */}
+          <div className="w-1 flex-shrink-0" aria-hidden />
+        </div>
+
+        {/* Dot indicators */}
+        {rewards.length > 1 && (
+          <div className="mt-3 flex justify-center gap-1.5">
+            {rewards.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                aria-label={`Reward ${i + 1}`}
+                onClick={() => scrollTo(i)}
+                className={cn(
+                  "h-[5px] rounded-full transition-all duration-200 ease-ios",
+                  i === activeIdx
+                    ? "w-5 bg-sage"
+                    : "w-[5px] bg-olive/20"
+                )}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <Dialog
@@ -213,16 +262,16 @@ function RewardCard({
   const canAfford = currentPoints >= reward.cost_points;
 
   return (
-    <Card className="flex flex-col gap-3 p-5">
-      <h3 className="font-serif text-[18px] font-medium tracking-tight text-olive">
+    <Card className="flex w-[260px] flex-shrink-0 snap-start flex-col gap-3 p-5">
+      <h3 className="font-serif text-[18px] font-medium leading-snug tracking-tight text-olive">
         {reward.name}
       </h3>
       {reward.description && (
-        <p className="line-clamp-2 text-[13px] tracking-snug text-olive-soft">
+        <p className="line-clamp-3 flex-1 text-[13px] leading-relaxed tracking-snug text-olive-soft">
           {reward.description}
         </p>
       )}
-      <div className="mt-1 flex items-center justify-between gap-3">
+      <div className="mt-auto flex items-center justify-between gap-3 pt-1">
         <span className="text-[14px] font-medium tabular-nums text-sage-deep">
           {formatPoints(reward.cost_points)} pts
         </span>
