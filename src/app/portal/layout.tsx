@@ -3,6 +3,7 @@ import { BottomNav } from "@/components/portal/BottomNav";
 import { PortalTopBar } from "@/components/portal/PortalTopBar";
 import { PortalServiceWorkerRegistry } from "./PortalServiceWorkerRegistry";
 import { InstallBanner } from "./InstallBanner";
+import { PrefetchPortalRoutes } from "./PrefetchPortalRoutes";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { countActiveProductsForTenant } from "@/lib/shop/queries";
 import { getCurrentClient } from "@/lib/portal/queries";
@@ -59,6 +60,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
       <PortalServiceWorkerRegistry />
       <InstallBanner />
+      {/* Eagerly prefetch all portal tabs in background for instant switching */}
+      <PrefetchPortalRoutes />
     </div>
   );
 }

@@ -19,8 +19,8 @@ const nextConfig: NextConfig = {
     // Keep pages in the client-side router cache longer so revisiting
     // a tab feels instant rather than triggering a full server round-trip.
     staleTimes: {
-      dynamic: 60,   // dynamic pages cached 60s (default: 30s)
-      static: 300,   // static pages cached 5 min (default: 5 min)
+      dynamic: 300,  // RSC payload cached 5 min — portal tabs stay instant
+      static: 600,   // static pages cached 10 min
     },
   },
   // pdfkit ships .afm fonts via fs.readFileSync in CJS; webpack can't
