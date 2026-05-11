@@ -43,6 +43,7 @@
     "recharts": "^3.8.1",
     "resend": "^6.12.2",
     "stripe": "^17.4.0",
+    "swr": "^2.4.1",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
     "web-push": "^3.6.7",

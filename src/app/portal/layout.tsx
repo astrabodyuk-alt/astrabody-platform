@@ -4,6 +4,7 @@ import { PortalTopBar } from "@/components/portal/PortalTopBar";
 import { PortalServiceWorkerRegistry } from "./PortalServiceWorkerRegistry";
 import { InstallBanner } from "./InstallBanner";
 import { PrefetchPortalRoutes } from "./PrefetchPortalRoutes";
+import { SWRProvider } from "./SWRProvider";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { countActiveProductsForTenant } from "@/lib/shop/queries";
 import { getCurrentClient } from "@/lib/portal/queries";
@@ -43,6 +44,7 @@ async function BottomNavWithData() {
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   return (
+    <SWRProvider>
     <div className="relative mx-auto flex min-h-screen w-full max-w-[480px] flex-col bg-cream">
       {/* TopBar: renders instantly as skeleton (no name), then hydrates with
           the client's first name once the session resolves. */}
@@ -63,5 +65,6 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       {/* Eagerly prefetch all portal tabs in background for instant switching */}
       <PrefetchPortalRoutes />
     </div>
+    </SWRProvider>
   );
 }
