@@ -2,260 +2,382 @@
 
 import useSWR from "swr";
 import Link from "next/link";
-import { Calendar, ChevronRight, ArrowRight, Star } from "lucide-react";
 import { format } from "date-fns";
-import { ServiceCard } from "@/components/portal/ServiceCard";
-import { TodaySessionCard } from "@/components/portal/TodaySessionCard";
-import { BorderRotate } from "@/components/ui/BorderRotate";
+import { Bike, Zap, Snowflake, Sparkles, Calendar, ChevronRight } from "lucide-react";
 import { FlashDealCard } from "@/components/portal/FlashDealCard";
-import type { NextBookingView, LoyaltyView } from "@/lib/portal/queries";
+import type { LoyaltyView } from "@/lib/portal/queries";
 import type { FlashSlot } from "@/lib/flash-slots/queries";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+interface ActivePack {
+  id: string;
+  sessions_total: number;
+  sessions_remaining: number;
+  services: { name: string } | Array<{ name: string }> | null;
+}
+
+interface UpcomingBooking {
+  id: string;
+  starts_at: string;
+  services:
+    | { name: string; duration_min: number }
+    | Array<{ name: string; duration_min: number }>
+    | null;
+  staff:
+    | { display_name: string }
+    | Array<{ display_name: string }>
+    | null;
+}
 
 interface HomeData {
   clientId: string;
   firstName: string;
   loyalty: LoyaltyView;
-  nextBooking: NextBookingView | null;
+  nextBooking: unknown;
   flashSlots: FlashSlot[];
+  activePacks: ActivePack[];
+  upcomingBookings: UpcomingBooking[];
+  weekCounts: number[];
 }
 
-// ─── Main client component ────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function pickFirst<T>(v: T | T[] | null | undefined): T | null {
+  if (v == null) return null;
+  return Array.isArray(v) ? (v[0] ?? null) : v;
+}
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+function serviceIcon(name: string | undefined) {
+  const n = (name ?? "").toLowerCase();
+  if (n.includes("bike") || n.includes("infra")) return Bike;
+  if (n.includes("ems")  || n.includes("sculpt")) return Zap;
+  if (n.includes("freez") || n.includes("cryo") || n.includes("fat")) return Snowflake;
+  return Sparkles;
+}
+
+function sessionCardBg(name: string | undefined) {
+  const n = (name ?? "").toLowerCase();
+  if (n.includes("bike") || n.includes("infra")) return "#DED2C3";
+  if (n.includes("ems")  || n.includes("sculpt")) return "#BBC4AA";
+  if (n.includes("freez") || n.includes("cryo") || n.includes("fat")) return "#E8EDE3";
+  return "#EDE8E1";
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export function HomeClient() {
   const { data, isLoading } = useSWR<HomeData>("/api/portal/home");
 
-  if (isLoading || !data) {
-    return (
-      <div className="flex min-h-[calc(100dvh-56px-86px)] flex-col gap-5 px-4 pb-16 pt-5">
-        <HeroSkeleton />
-        {/* Services grid skeleton */}
-        <section>
-          <div className="mb-3 flex items-center justify-between px-1">
-            <div className="h-2.5 w-16 animate-pulse rounded-full bg-olive/15" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="h-[90px] animate-pulse rounded-[20px] bg-sand/60"
-                style={{ animationDelay: `${i * 60}ms` }}
-              />
-            ))}
-          </div>
-        </section>
-      </div>
-    );
-  }
+  if (isLoading || !data) return <HomeSkeleton />;
 
-  const { firstName, loyalty, nextBooking, flashSlots } = data;
+  const { firstName, loyalty, flashSlots, activePacks, upcomingBookings, weekCounts } = data;
 
-  // TODO: remove mock — testing TodaySessionCard display
-  const todayBooking: NextBookingView = nextBooking ?? {
-    bookingId: "test",
-    startsAt: new Date(new Date().setHours(19, 0, 0, 0)).toISOString(),
-    service: "EMS Body Sculpting",
-    staffName: "Tove",
-    durationMin: 30,
-    resourceName: null,
-    canReschedule: false,
-  };
+  const points     = loyalty?.currentPoints ?? 0;
+  const maxPts     = loyalty?.nextReward?.costPoints ?? 1000;
+  const ringPct    = Math.min(points / maxPts, 1);
+  const ringC      = 226; // 2π × 36
+  const ringOffset = ringC - ringC * ringPct;
+  const todayIdx   = (() => { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; })();
+  const maxCount   = Math.max(...weekCounts, 1);
 
   return (
-    <div className="flex min-h-[calc(100dvh-56px-86px)] flex-col gap-5 px-4 pb-16 pt-5">
-      {/* Hero card */}
-      <HeroCard firstName={firstName} loyalty={loyalty} nextBooking={nextBooking} />
+    <div className="flex min-h-[calc(100dvh-56px)] flex-col md:min-h-screen md:flex-row">
 
-      {/* Today's session */}
-      {todayBooking && (
-        <BorderRotate
-          animationMode="auto-rotate"
-          animationSpeed={4}
-          borderWidth={2}
-          borderRadius={24}
-          backgroundColor="#f2efe9"
-          gradientColors={{
-            primary: "#2e3d22",
-            secondary: "#758564",
-            accent: "#d4dcc8",
-          }}
-        >
-          <TodaySessionCard booking={todayBooking} />
-        </BorderRotate>
-      )}
+      {/* ── Main column ──────────────────────────────────────────────────── */}
+      <div className="flex flex-1 flex-col gap-5 p-4 md:p-6">
 
-      {/* Flash Deals */}
-      {flashSlots.length > 0 && (
-        <section>
-          <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-olive/50">
-            ⚡ Today only
-          </p>
-          <div className="flex flex-col gap-3">
-            {flashSlots.map((slot) => (
-              <FlashDealCard key={slot.id} slot={slot} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Services */}
-      <section>
-        <div className="mb-3 flex items-center justify-between px-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-olive/50">
-            Services
-          </p>
-          <Link
-            href="/portal/book"
-            className="flex items-center gap-1 text-[11px] font-medium text-sage-deep"
-          >
-            See all <ArrowRight size={11} strokeWidth={2} />
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <ServiceCard href="/portal/book?filter=ems"   iconKey="ems"   title="EMS Sculpting" subtitle="30–50 min" />
-          <ServiceCard href="/portal/book?filter=fat"   iconKey="fat"   title="Fat Freezing"  subtitle="45 min" />
-          <ServiceCard href="/portal/book?filter=bike"  iconKey="bike"  title="InfraBike"     subtitle="30 min" />
-          <ServiceCard href="/portal/book?filter=laser" iconKey="laser" title="Laser Hair"    subtitle="15–60 min" />
-        </div>
-      </section>
-    </div>
-  );
-}
-
-// ─── Hero Card ────────────────────────────────────────────────────────────────
-
-function HeroCard({
-  firstName,
-  loyalty,
-  nextBooking,
-}: {
-  firstName: string;
-  loyalty: LoyaltyView;
-  nextBooking: NextBookingView | null;
-}) {
-  const greeting = getGreeting();
-  const tierLabel = loyalty.tier ?? "Friend";
-  const points = loyalty.currentPoints ?? 0;
-  const ptsToNext =
-    loyalty.nextReward && loyalty.nextReward.costPoints - points > 0
-      ? loyalty.nextReward.costPoints - points
-      : null;
-
-  return (
-    <div className="relative overflow-hidden rounded-[28px]" style={{ minHeight: 320 }}>
-      {/* Full-bleed InfraBike photo */}
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/images/infrabike-hero.jpg')" }}
-      />
-
-      {/* Dark gradient overlay for readability */}
-      <div
-        aria-hidden
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(to bottom, rgba(20,32,14,0.38) 0%, rgba(20,32,14,0.55) 45%, rgba(14,22,10,0.82) 100%)",
-        }}
-      />
-
-      {/* Content */}
-      <div className="relative flex flex-col justify-between" style={{ minHeight: 320 }}>
-        {/* Top row — greeting + tier badge */}
-        <div className="flex items-start justify-between p-5 pb-0">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
-              {greeting}
-            </p>
-            <h1 className="mt-1 font-serif text-[30px] font-medium leading-none tracking-tight text-white drop-shadow-sm">
-              {firstName}
-            </h1>
-          </div>
-          <div
-            className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5"
-            style={{
-              background: "rgba(255,255,255,0.12)",
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
-            }}
-          >
-            <Star size={9} className="fill-sage-light text-sage-light" />
-            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/80">
-              {tierLabel}
-            </span>
-          </div>
-        </div>
-
-        {/* Glass strip — points + CTA */}
+        {/* Hero banner */}
         <div
-          className="mx-3 mb-3 mt-auto rounded-[20px] p-4"
-          style={{
-            background: "rgba(255,255,255,0.10)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            border: "1px solid rgba(255,255,255,0.14)",
-          }}
+          className="relative overflow-hidden rounded-[20px] p-5"
+          style={{ background: "#3E3E31", minHeight: 148 }}
         >
-          {/* Points row */}
-          <div className="mb-3 flex items-end justify-between">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/45">
-                Inner Circle
-              </p>
-              <div className="mt-0.5 flex items-baseline gap-1.5">
-                <span className="font-serif text-[40px] font-medium leading-none tracking-tight text-white">
-                  {points.toLocaleString()}
-                </span>
-                <span className="mb-0.5 text-[13px] font-medium text-white/40">pts</span>
-              </div>
+          <div aria-hidden
+            className="pointer-events-none absolute right-4 top-3 h-24 w-24 rounded-full opacity-25"
+            style={{ border: "20px solid #758564" }}
+          />
+          <div aria-hidden
+            className="pointer-events-none absolute right-12 bottom-[-18px] h-14 w-14 rounded-full opacity-15"
+            style={{ border: "14px solid #758564" }}
+          />
+          <div className="relative z-10">
+            <div
+              className="mb-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1"
+              style={{ background: "rgba(117,133,100,0.28)" }}
+            >
+              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-sage-light">
+                Coming soon
+              </span>
             </div>
-            {ptsToNext ? (
-              <p className="max-w-[120px] text-right text-[11px] leading-snug text-white/45">
-                {ptsToNext.toLocaleString()} pts to next reward
-              </p>
-            ) : loyalty.nextReward ? (
-              <p className="text-right text-[11px] text-sage-light">Reward ready ✦</p>
-            ) : null}
+            <h1 className="mb-4 max-w-[210px] font-serif text-[22px] font-medium leading-[1.25] tracking-tight text-cream">
+              Nutritional supplements, tailored to you
+            </h1>
+            <Link
+              href="/portal/shop"
+              className="inline-flex items-center gap-2 rounded-full bg-cream px-4 py-2 text-[13px] font-medium text-olive transition-opacity hover:opacity-90"
+            >
+              Order
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-olive">
+                <ChevronRight size={10} strokeWidth={2.5} className="text-cream" />
+              </span>
+            </Link>
+          </div>
+        </div>
+
+        {/* Flash slots */}
+        {flashSlots.length > 0 && (
+          <section>
+            <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-olive/40">
+              ⚡ Today only
+            </p>
+            <div className="flex flex-col gap-3">
+              {flashSlots.map((slot) => (
+                <FlashDealCard key={slot.id} slot={slot} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Active pack progress */}
+        {activePacks.length > 0 && (
+          <section>
+            <p className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-olive/40">
+              Your packs
+            </p>
+            <div className="grid grid-cols-3 gap-2.5">
+              {activePacks.map((pack) => {
+                const svc  = pickFirst(pack.services);
+                const name = svc?.name ?? "Session";
+                const Icon = serviceIcon(name);
+                const used = pack.sessions_total - pack.sessions_remaining;
+                return (
+                  <div key={pack.id} className="rounded-[14px] border border-sand bg-white p-3">
+                    <div className="mb-2.5 flex items-center justify-between">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-sand/60">
+                        <Icon size={15} strokeWidth={1.6} className="text-sage" />
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-olive/40">
+                      {used} / {pack.sessions_total} sessions
+                    </p>
+                    <p className="mt-0.5 truncate text-[12px] font-medium text-olive">{name}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Upcoming sessions */}
+        <section>
+          <div className="mb-2.5 flex items-center justify-between px-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-olive/40">
+              Upcoming sessions
+            </p>
+            <Link href="/portal/book" className="text-[11px] font-medium text-sage">
+              Book more
+            </Link>
           </div>
 
-          {/* CTA */}
-          {nextBooking ? (
+          {upcomingBookings.length === 0 ? (
             <Link
               href="/portal/book"
-              className="flex items-center gap-3 rounded-[14px] border border-white/10 bg-white/10 px-4 py-3 transition-colors hover:bg-white/15"
+              className="flex items-center gap-3 rounded-[14px] border border-sand bg-white px-4 py-3.5 transition-colors hover:bg-sand/20"
             >
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/15">
-                <Calendar size={13} strokeWidth={1.8} className="text-sage-light" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sand/60">
+                <Calendar size={14} strokeWidth={1.6} className="text-sage" />
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-medium text-white">
-                  {nextBooking.service}
-                </p>
-                <p className="mt-0.5 text-[11px] text-white/45">
-                  {format(new Date(nextBooking.startsAt), "EEE d MMM · HH:mm")}
-                  {nextBooking.staffName ? ` · ${nextBooking.staffName}` : ""}
-                </p>
+              <div className="flex-1">
+                <p className="text-[13px] font-medium text-olive">No upcoming sessions</p>
+                <p className="mt-0.5 text-[11px] text-olive/40">Tap to book your next visit</p>
               </div>
-              <ChevronRight size={13} strokeWidth={2} className="shrink-0 text-white/30" />
+              <ChevronRight size={13} strokeWidth={1.8} className="text-olive/25" />
             </Link>
           ) : (
-            <Link
-              href="/portal/book"
-              className="group flex items-center justify-between rounded-[14px] bg-sage px-5 py-3.5 transition-colors hover:bg-sage/90"
-            >
-              <span className="font-serif text-[16px] font-medium text-cream">
-                Book a session
-              </span>
-              <ArrowRight
-                size={15}
-                strokeWidth={2}
-                className="text-cream/80 transition-transform group-hover:translate-x-0.5"
-              />
-            </Link>
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+              {upcomingBookings.map((booking) => {
+                const svc   = pickFirst(booking.services);
+                const staff = pickFirst(booking.staff);
+                const name  = svc?.name ?? "Session";
+                const Icon  = serviceIcon(name);
+                const bg    = sessionCardBg(name);
+                return (
+                  <div key={booking.id} className="overflow-hidden rounded-[14px] border border-sand bg-white">
+                    <div
+                      className="flex h-[68px] items-center justify-center"
+                      style={{ background: bg }}
+                    >
+                      <Icon size={26} strokeWidth={1.4} className="text-olive" />
+                    </div>
+                    <div className="p-3">
+                      <span className="mb-1.5 inline-block rounded-full bg-sand/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-sage">
+                        {name.split(" ")[0]}
+                      </span>
+                      <p className="text-[12px] font-medium leading-snug text-olive">
+                        {name} · {svc?.duration_min ?? 30} min
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        <div className="flex h-4 w-4 items-center justify-center rounded-full bg-sand text-[9px] font-semibold text-olive">
+                          {(staff?.display_name ?? "?")[0]}
+                        </div>
+                        <p className="text-[11px] text-olive/45">
+                          {staff?.display_name ?? "Team"} ·{" "}
+                          {format(new Date(booking.starts_at), "EEE d MMM")}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
+        </section>
+
+        {/* Recent treatments link (desktop) */}
+        <section className="hidden md:block">
+          <div className="mb-2.5 flex items-center justify-between px-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-olive/40">
+              Recent treatments
+            </p>
+            <Link href="/portal/me" className="text-[11px] font-medium text-sage">
+              See all
+            </Link>
+          </div>
+          <div className="overflow-hidden rounded-[14px] border border-sand bg-white">
+            <p className="p-4 text-[13px] text-olive/40">
+              Visit{" "}
+              <Link href="/portal/me" className="text-sage underline underline-offset-2">
+                your profile
+              </Link>{" "}
+              to see your full treatment history and loyalty rewards.
+            </p>
+          </div>
+        </section>
+
+      </div>
+
+      {/* ── Right panel — desktop only ────────────────────────────────────── */}
+      <div className="hidden md:flex w-[185px] flex-shrink-0 flex-col gap-4 border-l border-sand/50 p-4">
+
+        {/* Points ring */}
+        <div className="rounded-[14px] border border-sand bg-white p-4">
+          <p className="mb-3 text-[13px] font-medium text-olive">Points</p>
+          <div className="flex flex-col items-center">
+            <div className="relative h-[88px] w-[88px]">
+              <svg width="88" height="88" viewBox="0 0 88 88" className="-rotate-90">
+                <circle cx="44" cy="44" r="36" fill="none" stroke="#EDE8E1" strokeWidth="9" />
+                <circle
+                  cx="44" cy="44" r="36"
+                  fill="none"
+                  stroke="#758564"
+                  strokeWidth="9"
+                  strokeDasharray={ringC}
+                  strokeDashoffset={ringOffset}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[16px] font-medium text-olive">
+                  {Math.round(ringPct * 100)}%
+                </span>
+              </div>
+            </div>
+            <p className="mt-2 text-center text-[12px] font-medium text-olive">
+              {getGreeting()}, {firstName}
+            </p>
+            <p className="mt-0.5 text-center text-[11px] text-olive/40">
+              {points.toLocaleString()} pts
+              {loyalty?.nextReward
+                ? ` · ${(maxPts - points).toLocaleString()} to next`
+                : ""}
+            </p>
+          </div>
         </div>
+
+        {/* Sessions bar chart */}
+        <div className="rounded-[14px] border border-sand bg-white p-4">
+          <p className="mb-3 text-[13px] font-medium text-olive">This week</p>
+          <div className="flex items-end gap-[5px]" style={{ height: 56 }}>
+            {weekCounts.map((count, i) => {
+              const barH   = Math.max(4, Math.round((count / maxCount) * 46));
+              const active = i === todayIdx;
+              const labels = ["M", "T", "W", "T", "F", "S", "S"];
+              return (
+                <div
+                  key={i}
+                  className="flex flex-1 flex-col items-center gap-[3px]"
+                  style={{ justifyContent: "flex-end", height: "100%" }}
+                >
+                  <div
+                    className="w-full rounded-t-[3px]"
+                    style={{
+                      height: barH,
+                      background: active ? "#758564" : "#EDE8E1",
+                    }}
+                  />
+                  <span
+                    className="text-[9px]"
+                    style={{
+                      color: active ? "#758564" : "#BBC4AA",
+                      fontWeight: active ? 600 : 400,
+                    }}
+                  >
+                    {labels[i]}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Team */}
+        <div className="rounded-[14px] border border-sand bg-white p-4">
+          <p className="mb-3 text-[13px] font-medium text-olive">Your team</p>
+          <div className="flex flex-col gap-2.5">
+            {(
+              [
+                { name: "Tove",  role: "Therapist", bg: "#DED2C3", fg: "#3E3E31" },
+                { name: "Jade",  role: "Therapist", bg: "#BBC4AA", fg: "#3E3E31" },
+                { name: "Nigel", role: "Founder",   bg: "#758564", fg: "#F6F3EE" },
+              ] as const
+            ).map(({ name, role, bg, fg }) => (
+              <div key={name} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
+                    style={{ background: bg, color: fg }}
+                  >
+                    {name[0]}
+                  </div>
+                  <div>
+                    <p className="text-[12px] font-medium leading-none text-olive">{name}</p>
+                    <p className="mt-0.5 text-[10px] leading-none text-olive/40">{role}</p>
+                  </div>
+                </div>
+                <Link
+                  href="/portal/book"
+                  className="rounded-full bg-sand/50 px-2 py-1 text-[10px] font-medium text-sage transition-colors hover:bg-sand"
+                >
+                  Book
+                </Link>
+              </div>
+            ))}
+          </div>
+          <Link
+            href="/portal/book"
+            className="mt-3 flex w-full items-center justify-center rounded-[8px] bg-sand/40 py-2 text-[12px] font-medium text-sage transition-colors hover:bg-sand/70"
+          >
+            See all
+          </Link>
+        </div>
+
       </div>
     </div>
   );
@@ -263,40 +385,35 @@ function HeroCard({
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
-function HeroSkeleton() {
+function HomeSkeleton() {
   return (
-    <div
-      className="relative overflow-hidden rounded-[28px]"
-      style={{
-        minHeight: 320,
-        background: "linear-gradient(160deg, #3a4a2c 0%, #28381c 100%)",
-      }}
-    >
-      <div className="flex flex-col justify-between" style={{ minHeight: 320 }}>
-        <div className="flex items-start justify-between p-5 pb-0">
-          <div className="flex flex-col gap-2.5">
-            <div className="h-2.5 w-20 animate-pulse rounded-full bg-white/20" />
-            <div className="h-7 w-32 animate-pulse rounded-full bg-white/25" />
-          </div>
-          <div className="h-7 w-16 animate-pulse rounded-full bg-white/15" />
+    <div className="flex flex-col gap-5 p-4 md:flex-row md:p-6">
+      <div className="flex flex-1 flex-col gap-5">
+        <div className="h-[148px] animate-pulse rounded-[20px] bg-olive/10" />
+        <div className="grid grid-cols-3 gap-2.5">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-[80px] animate-pulse rounded-[14px] bg-sand/60"
+              style={{ animationDelay: `${i * 60}ms` }}
+            />
+          ))}
         </div>
-        <div className="mx-3 mb-3 mt-auto rounded-[20px] border border-white/10 bg-white/10 p-4">
-          <div className="mb-3 flex flex-col gap-2">
-            <div className="h-2 w-20 animate-pulse rounded-full bg-white/20" />
-            <div className="h-10 w-28 animate-pulse rounded-full bg-white/25" />
-          </div>
-          <div className="h-12 animate-pulse rounded-[14px] bg-white/15" />
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-[150px] animate-pulse rounded-[14px] bg-sand/60"
+              style={{ animationDelay: `${i * 80}ms` }}
+            />
+          ))}
         </div>
+      </div>
+      <div className="hidden md:flex w-[185px] flex-col gap-4">
+        <div className="h-[160px] animate-pulse rounded-[14px] bg-sand/60" />
+        <div className="h-[100px] animate-pulse rounded-[14px] bg-sand/60" />
+        <div className="h-[160px] animate-pulse rounded-[14px] bg-sand/60" />
       </div>
     </div>
   );
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
 }

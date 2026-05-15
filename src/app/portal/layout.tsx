@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { BottomNav } from "@/components/portal/BottomNav";
 import { PortalTopBar } from "@/components/portal/PortalTopBar";
+import { PortalSidebar } from "@/components/portal/PortalSidebar";
 import { PortalServiceWorkerRegistry } from "./PortalServiceWorkerRegistry";
 import { InstallBanner } from "./InstallBanner";
 import { PrefetchPortalRoutes } from "./PrefetchPortalRoutes";
@@ -10,16 +11,14 @@ import { countActiveProductsForTenant } from "@/lib/shop/queries";
 import { getCurrentClient } from "@/lib/portal/queries";
 
 /**
- * Portal layout.
+ * Portal layout — responsive.
  *
- * Previously all DB calls (getCurrentClient + shop count) were awaited
- * before any HTML was sent. On a Vercel cold start this added ~800ms of
- * blank screen before even the app shell was visible.
+ * Mobile  (<md):  max-w-[480px] centred, PortalTopBar + floating BottomNav.
+ * Desktop (≥md):  full-width flex-row — PortalSidebar (200px) + main content.
  *
- * Now the structural shell (cream background + fallback nav bars) streams
- * immediately. Two async sub-components load the nav data in parallel
- * with the page content via React Suspense. getCurrentClient() is wrapped
- * with React.cache(), so both sub-components share a single DB round-trip.
+ * Structural shell streams immediately; data sub-components load in parallel
+ * with page content via React Suspense. getCurrentClient() is React.cache'd
+ * so sidebar + page share a single DB hit per request.
  */
 
 async function TopBarWithName() {
@@ -28,6 +27,15 @@ async function TopBarWithName() {
     return <PortalTopBar clientName={me.firstName} />;
   } catch {
     return <PortalTopBar />;
+  }
+}
+
+async function SidebarWithName() {
+  try {
+    const me = await getCurrentClient();
+    return <PortalSidebar clientName={me.firstName} />;
+  } catch {
+    return <PortalSidebar />;
   }
 }
 
@@ -45,26 +53,41 @@ async function BottomNavWithData() {
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   return (
     <SWRProvider>
-    <div className="relative mx-auto flex min-h-screen w-full max-w-[480px] flex-col bg-cream">
-      {/* TopBar: renders instantly as skeleton (no name), then hydrates with
-          the client's first name once the session resolves. */}
-      <Suspense fallback={<PortalTopBar />}>
-        <TopBarWithName />
-      </Suspense>
+      {/*
+        Mobile  : column, centred, max-w-[480px]
+        Desktop : flex-row — sidebar (sticky 200px) + flex-1 content
+      */}
+      <div className="flex min-h-screen w-full bg-cream md:flex-row">
 
-      <main className="flex-1 pb-[100px]">{children}</main>
+        {/* Desktop sidebar — hidden on mobile */}
+        <Suspense fallback={null}>
+          <SidebarWithName />
+        </Suspense>
 
-      {/* BottomNav: renders instantly (showShop=false fallback), shop badge
-          appears once the product count query resolves. */}
-      <Suspense fallback={<BottomNav showShop={false} />}>
-        <BottomNavWithData />
-      </Suspense>
+        {/* Main column */}
+        <div className="relative mx-auto flex w-full max-w-[480px] flex-col md:mx-0 md:max-w-none md:flex-1">
+
+          {/* Top bar — mobile only */}
+          <div className="md:hidden">
+            <Suspense fallback={<PortalTopBar />}>
+              <TopBarWithName />
+            </Suspense>
+          </div>
+
+          <main className="flex-1 pb-[100px] md:pb-6">{children}</main>
+
+          {/* Bottom nav — mobile only */}
+          <div className="md:hidden">
+            <Suspense fallback={<BottomNav showShop={false} />}>
+              <BottomNavWithData />
+            </Suspense>
+          </div>
+        </div>
+      </div>
 
       <PortalServiceWorkerRegistry />
       <InstallBanner />
-      {/* Eagerly prefetch all portal tabs in background for instant switching */}
       <PrefetchPortalRoutes />
-    </div>
     </SWRProvider>
   );
 }
