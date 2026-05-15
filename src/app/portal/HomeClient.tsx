@@ -145,35 +145,8 @@ export function HomeClient() {
           </section>
         )}
 
-        {/* Active pack progress */}
-        {activePacks.length > 0 && (
-          <section>
-            <p className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-olive/40">
-              Your packs
-            </p>
-            <div className="grid grid-cols-3 gap-2.5">
-              {activePacks.map((pack) => {
-                const svc  = pickFirst(pack.services);
-                const name = svc?.name ?? "Session";
-                const Icon = serviceIcon(name);
-                const used = pack.sessions_total - pack.sessions_remaining;
-                return (
-                  <div key={pack.id} className="rounded-[14px] border border-sand bg-white p-3">
-                    <div className="mb-2.5 flex items-center justify-between">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-sand/60">
-                        <Icon size={15} strokeWidth={1.6} className="text-sage" />
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-olive/40">
-                      {used} / {pack.sessions_total} sessions
-                    </p>
-                    <p className="mt-0.5 truncate text-[12px] font-medium text-olive">{name}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
+        {/* Services / pack progress — always shown (InfraBike + EMS) */}
+        <ServiceCards activePacks={activePacks} />
 
         {/* Upcoming sessions */}
         <section>
@@ -383,6 +356,78 @@ export function HomeClient() {
   );
 }
 
+// ─── ServiceCards — always show InfraBike + EMS ──────────────────────────────
+
+const FIXED_SERVICES = [
+  { key: "bike",  label: "InfraBike",       Icon: Bike, bookFilter: "bike" },
+  { key: "ems",   label: "EMS SupraSculpt", Icon: Zap,  bookFilter: "ems"  },
+] as const;
+
+function ServiceCards({ activePacks }: { activePacks: ActivePack[] }) {
+  // Map active packs by service name keyword for quick lookup
+  const packByKey = new Map<string, ActivePack>();
+  for (const pack of activePacks) {
+    const name = (pickFirst(pack.services)?.name ?? "").toLowerCase();
+    if (name.includes("bike") || name.includes("infra")) packByKey.set("bike", pack);
+    if (name.includes("ems")  || name.includes("sculpt")) packByKey.set("ems", pack);
+  }
+
+  return (
+    <section>
+      <p className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-olive/40">
+        Your services
+      </p>
+      <div className="grid grid-cols-2 gap-2.5">
+        {FIXED_SERVICES.map(({ key, label, Icon, bookFilter }) => {
+          const pack = packByKey.get(key);
+          const used = pack ? pack.sessions_total - pack.sessions_remaining : null;
+          return (
+            <Link
+              key={key}
+              href={`/portal/book?filter=${bookFilter}`}
+              className="group rounded-[14px] border border-sand bg-white p-3 transition-colors hover:border-sage/30 hover:bg-sand/10"
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-sand/60 transition-colors group-hover:bg-sage/10">
+                  <Icon size={15} strokeWidth={1.6} className="text-sage" />
+                </div>
+                {pack && (
+                  <span className="text-[10px] font-semibold text-sage">
+                    {pack.sessions_remaining} left
+                  </span>
+                )}
+              </div>
+              {pack ? (
+                <>
+                  <p className="text-[11px] text-olive/40">
+                    {used} / {pack.sessions_total} sessions used
+                  </p>
+                  <p className="mt-0.5 text-[13px] font-medium text-olive">{label}</p>
+                  {/* Progress bar */}
+                  <div className="mt-2.5 h-1 w-full overflow-hidden rounded-full bg-sand/60">
+                    <div
+                      className="h-full rounded-full bg-sage"
+                      style={{ width: `${Math.round(((used ?? 0) / pack.sessions_total) * 100)}%` }}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-[11px] text-olive/40">Single sessions from</p>
+                  <p className="mt-0.5 text-[13px] font-medium text-olive">{label}</p>
+                  <p className="mt-1 text-[11px] font-medium text-sage">
+                    {key === "bike" ? "£39 / session" : "£80 / session"}
+                  </p>
+                </>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function HomeSkeleton() {
@@ -390,11 +435,11 @@ function HomeSkeleton() {
     <div className="flex flex-col gap-5 p-4 md:flex-row md:p-6">
       <div className="flex flex-1 flex-col gap-5">
         <div className="h-[148px] animate-pulse rounded-[20px] bg-olive/10" />
-        <div className="grid grid-cols-3 gap-2.5">
-          {[0, 1, 2].map((i) => (
+        <div className="grid grid-cols-2 gap-2.5">
+          {[0, 1].map((i) => (
             <div
               key={i}
-              className="h-[80px] animate-pulse rounded-[14px] bg-sand/60"
+              className="h-[90px] animate-pulse rounded-[14px] bg-sand/60"
               style={{ animationDelay: `${i * 60}ms` }}
             />
           ))}
