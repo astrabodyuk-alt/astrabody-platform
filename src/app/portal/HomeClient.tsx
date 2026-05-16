@@ -1,6 +1,7 @@
 "use client";
 
 import useSWR from "swr";
+import { useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Bike, Zap, Snowflake, Sparkles, Calendar, ChevronRight } from "lucide-react";
@@ -71,12 +72,37 @@ function sessionCardBg(name: string | undefined) {
   return "#EDE8E1";
 }
 
+// ─── localStorage cache helpers ───────────────────────────────────────────────
+
+const CACHE_KEY = "ab:home:v1";
+
+function readCache(): HomeData | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? (JSON.parse(raw) as HomeData) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeCache(data: HomeData) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch { /* quota */ }
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function HomeClient() {
-  const { data, isLoading } = useSWR<HomeData>("/api/portal/home");
+  // Seed SWR with the last-known data so the dashboard renders instantly
+  // on repeat visits — no skeleton flash even if the API is still loading.
+  const [fallback] = useState<HomeData | undefined>(readCache);
 
-  if (isLoading || !data) return <HomeSkeleton />;
+  const { data } = useSWR<HomeData>("/api/portal/home", {
+    fallbackData: fallback,
+    onSuccess: writeCache,
+  });
+
+  if (!data) return <HomeSkeleton />;
 
   const { firstName, loyalty, flashSlots, activePacks, upcomingBookings, weekCounts } = data;
 

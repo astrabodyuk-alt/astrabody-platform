@@ -4,6 +4,7 @@ import { getActiveFlashSlotsForPortal } from "@/lib/flash-slots/queries";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { startOfWeek, endOfWeek, getDay } from "date-fns";
 
+export const runtime = "edge";   // ~50 ms cold start vs ~2-3 s for Node.js
 export const dynamic = "force-dynamic";
 
 export async function GET() {
