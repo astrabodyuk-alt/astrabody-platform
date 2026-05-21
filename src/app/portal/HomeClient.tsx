@@ -4,7 +4,7 @@ import useSWR from "swr";
 import { useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { Bike, Zap, Snowflake, Sparkles, Calendar, ChevronRight } from "lucide-react";
+import { Bike, Zap, Calendar, ChevronRight, Sparkles, ArrowUpRight } from "lucide-react";
 import { FlashDealCard } from "@/components/portal/FlashDealCard";
 import type { LoyaltyView } from "@/lib/portal/queries";
 import type { FlashSlot } from "@/lib/flash-slots/queries";
@@ -59,20 +59,11 @@ function getGreeting() {
 function serviceIcon(name: string | undefined) {
   const n = (name ?? "").toLowerCase();
   if (n.includes("bike") || n.includes("infra")) return Bike;
-  if (n.includes("ems")  || n.includes("sculpt")) return Zap;
-  if (n.includes("freez") || n.includes("cryo") || n.includes("fat")) return Snowflake;
+  if (n.includes("ems") || n.includes("sculpt")) return Zap;
   return Sparkles;
 }
 
-function sessionCardBg(name: string | undefined) {
-  const n = (name ?? "").toLowerCase();
-  if (n.includes("bike") || n.includes("infra")) return "#DED2C3";
-  if (n.includes("ems")  || n.includes("sculpt")) return "#BBC4AA";
-  if (n.includes("freez") || n.includes("cryo") || n.includes("fat")) return "#E8EDE3";
-  return "#EDE8E1";
-}
-
-// ─── localStorage cache helpers ───────────────────────────────────────────────
+// ─── localStorage cache ───────────────────────────────────────────────────────
 
 const CACHE_KEY = "ab:home:v1";
 
@@ -93,8 +84,6 @@ function writeCache(data: HomeData) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function HomeClient() {
-  // Seed SWR with the last-known data so the dashboard renders instantly
-  // on repeat visits — no skeleton flash even if the API is still loading.
   const [fallback] = useState<HomeData | undefined>(readCache);
 
   const { data } = useSWR<HomeData>("/api/portal/home", {
@@ -108,59 +97,116 @@ export function HomeClient() {
 
   const points     = loyalty?.currentPoints ?? 0;
   const maxPts     = loyalty?.nextReward?.costPoints ?? 1000;
+  const ptsToNext  = Math.max(0, maxPts - points);
   const ringPct    = Math.min(points / maxPts, 1);
-  const ringC      = 226; // 2π × 36
+  const ringC      = 226;
   const ringOffset = ringC - ringC * ringPct;
   const todayIdx   = (() => { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; })();
   const maxCount   = Math.max(...weekCounts, 1);
+  const totalWeekSessions = weekCounts.reduce((a, b) => a + b, 0);
+  const nextBooking = upcomingBookings[0] ?? null;
+  const nextSvc = nextBooking ? pickFirst(nextBooking.services) : null;
 
   return (
     <div className="flex min-h-[calc(100dvh-56px)] flex-col md:min-h-screen md:flex-row">
 
       {/* ── Main column ──────────────────────────────────────────────────── */}
-      <div className="flex flex-1 flex-col gap-5 p-4 md:p-6">
+      <div className="flex flex-1 flex-col gap-4 p-4 md:gap-5 md:p-6">
 
-        {/* Hero banner */}
+        {/* ── Hero — personal balance card (FlowPay inspired) ── */}
         <div
-          className="relative overflow-hidden rounded-[20px] p-5"
-          style={{ background: "#3E3E31", minHeight: 148 }}
+          className="relative overflow-hidden rounded-[22px] px-5 py-5"
+          style={{ background: "#3E3E31", minHeight: 164 }}
         >
-          <div aria-hidden
-            className="pointer-events-none absolute right-4 top-3 h-24 w-24 rounded-full opacity-25"
-            style={{ border: "20px solid #758564" }}
-          />
-          <div aria-hidden
-            className="pointer-events-none absolute right-12 bottom-[-18px] h-14 w-14 rounded-full opacity-15"
-            style={{ border: "14px solid #758564" }}
-          />
+          {/* Decorative rings */}
+          <div aria-hidden className="pointer-events-none absolute -right-6 -top-6 h-36 w-36 rounded-full opacity-[0.07]" style={{ border: "32px solid #BBC4AA" }} />
+          <div aria-hidden className="pointer-events-none absolute -right-2 top-14 h-16 w-16 rounded-full opacity-[0.06]" style={{ border: "12px solid #BBC4AA" }} />
+
           <div className="relative z-10">
-            <div
-              className="mb-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1"
-              style={{ background: "rgba(117,133,100,0.28)" }}
-            >
-              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-sage-light">
-                Coming soon
+            {/* Greeting */}
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/40">
+              {getGreeting()}, {firstName}
+            </p>
+
+            {/* Points balance — big Cormorant number */}
+            <div className="mt-1 flex items-end gap-2">
+              <span className="font-serif text-[52px] font-medium leading-none tracking-tight text-cream">
+                {points.toLocaleString("en-GB")}
               </span>
+              <span className="mb-1.5 text-[13px] font-medium text-white/40">pts</span>
             </div>
-            <h1 className="mb-4 max-w-[210px] font-serif text-[22px] font-medium leading-[1.25] tracking-tight text-cream">
-              Nutritional supplements, tailored to you
-            </h1>
+
+            {/* Subtitle */}
+            <p className="mt-1 text-[12px] text-white/45">
+              {ptsToNext > 0
+                ? `${ptsToNext.toLocaleString("en-GB")} pts to your next reward`
+                : "You've reached your next reward 🎁"}
+            </p>
+
+            {/* CTA */}
             <Link
-              href="/portal/shop"
-              className="inline-flex items-center gap-2 rounded-full bg-cream px-4 py-2 text-[13px] font-medium text-olive transition-opacity hover:opacity-90"
+              href="/portal/book"
+              className="mt-4 inline-flex items-center gap-2 rounded-full bg-cream px-4 py-2 text-[12px] font-semibold text-olive transition-opacity hover:opacity-90 active:scale-[0.97]"
             >
-              Order
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-olive">
-                <ChevronRight size={10} strokeWidth={2.5} className="text-cream" />
-              </span>
+              Book a session
+              <ArrowUpRight size={12} strokeWidth={2.5} className="text-olive/70" />
             </Link>
           </div>
         </div>
 
-        {/* Flash slots */}
+        {/* ── 3 Stat cards (FlowPay row) ── */}
+        <div className="grid grid-cols-3 gap-2.5">
+          {/* Sessions this week */}
+          <div className="rounded-[16px] border border-sand bg-white p-3.5">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-olive/35">
+              This week
+            </p>
+            <p className="mt-1.5 font-serif text-[26px] font-medium leading-none text-olive">
+              {totalWeekSessions}
+            </p>
+            <p className="mt-1 text-[10px] text-olive/40">sessions</p>
+          </div>
+
+          {/* Points */}
+          <div className="rounded-[16px] border border-sand bg-white p-3.5">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-olive/35">
+              Balance
+            </p>
+            <p className="mt-1.5 font-serif text-[26px] font-medium leading-none text-olive">
+              {points.toLocaleString("en-GB")}
+            </p>
+            <p className="mt-1 text-[10px] text-olive/40">points</p>
+          </div>
+
+          {/* Next session */}
+          <div className="rounded-[16px] border border-sand bg-white p-3.5">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-olive/35">
+              Next
+            </p>
+            {nextBooking ? (
+              <>
+                <p className="mt-1.5 font-serif text-[16px] font-medium leading-tight text-olive">
+                  {format(new Date(nextBooking.starts_at), "d MMM")}
+                </p>
+                <p className="mt-0.5 text-[10px] text-olive/40">
+                  {format(new Date(nextBooking.starts_at), "HH:mm")}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="mt-1.5 font-serif text-[16px] font-medium leading-tight text-olive/30">
+                  —
+                </p>
+                <p className="mt-0.5 text-[10px] text-sage">Book now</p>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ── Flash slots ── */}
         {flashSlots.length > 0 && (
           <section>
-            <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-olive/40">
+            <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.13em] text-olive/35">
               ⚡ Today only
             </p>
             <div className="flex flex-col gap-3">
@@ -171,16 +217,16 @@ export function HomeClient() {
           </section>
         )}
 
-        {/* Services / pack progress — always shown (InfraBike + EMS) */}
+        {/* ── Services ── */}
         <ServiceCards activePacks={activePacks} />
 
-        {/* Upcoming sessions */}
+        {/* ── Upcoming sessions ── */}
         <section>
-          <div className="mb-2.5 flex items-center justify-between px-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-olive/40">
+          <div className="mb-3 flex items-center justify-between px-0.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-olive/35">
               Upcoming sessions
             </p>
-            <Link href="/portal/book" className="text-[11px] font-medium text-sage">
+            <Link href="/portal/book" className="text-[11px] font-medium text-sage hover:underline">
               Book more
             </Link>
           </div>
@@ -188,49 +234,50 @@ export function HomeClient() {
           {upcomingBookings.length === 0 ? (
             <Link
               href="/portal/book"
-              className="flex items-center gap-3 rounded-[14px] border border-sand bg-white px-4 py-3.5 transition-colors hover:bg-sand/20"
+              className="flex items-center gap-3 rounded-[16px] border border-sand bg-white px-4 py-3.5 transition-colors hover:bg-sand/10 active:scale-[0.99]"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sand/60">
-                <Calendar size={14} strokeWidth={1.6} className="text-sage" />
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-cream-deep">
+                <Calendar size={15} strokeWidth={1.5} className="text-sage" />
               </div>
               <div className="flex-1">
                 <p className="text-[13px] font-medium text-olive">No upcoming sessions</p>
                 <p className="mt-0.5 text-[11px] text-olive/40">Tap to book your next visit</p>
               </div>
-              <ChevronRight size={13} strokeWidth={1.8} className="text-olive/25" />
+              <ChevronRight size={14} strokeWidth={1.6} className="text-olive/20" />
             </Link>
           ) : (
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+            <div className="flex flex-col gap-2">
               {upcomingBookings.map((booking) => {
                 const svc   = pickFirst(booking.services);
                 const staff = pickFirst(booking.staff);
                 const name  = svc?.name ?? "Session";
                 const Icon  = serviceIcon(name);
-                const bg    = sessionCardBg(name);
+                const d     = new Date(booking.starts_at);
                 return (
-                  <div key={booking.id} className="overflow-hidden rounded-[14px] border border-sand bg-white">
-                    <div
-                      className="flex h-[68px] items-center justify-center"
-                      style={{ background: bg }}
-                    >
-                      <Icon size={26} strokeWidth={1.4} className="text-olive" />
-                    </div>
-                    <div className="p-3">
-                      <span className="mb-1.5 inline-block rounded-full bg-sand/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-sage">
-                        {name.split(" ")[0]}
+                  <div
+                    key={booking.id}
+                    className="flex items-center gap-3.5 rounded-[16px] border border-sand bg-white px-4 py-3"
+                  >
+                    {/* Date block */}
+                    <div className="flex w-[42px] flex-shrink-0 flex-col items-center justify-center rounded-[10px] bg-cream-deep py-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-widest text-olive/40">
+                        {format(d, "MMM")}
                       </span>
-                      <p className="text-[12px] font-medium leading-snug text-olive">
-                        {name} · {svc?.duration_min ?? 30} min
+                      <span className="font-serif text-[22px] font-medium leading-none text-olive">
+                        {format(d, "d")}
+                      </span>
+                    </div>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-[13px] font-medium text-olive">{name}</p>
+                      <p className="mt-0.5 text-[11px] text-olive/40">
+                        {format(d, "HH:mm")} · {svc?.duration_min ?? 30} min
+                        {staff ? ` · ${staff.display_name}` : ""}
                       </p>
-                      <div className="mt-1.5 flex items-center gap-1.5">
-                        <div className="flex h-4 w-4 items-center justify-center rounded-full bg-sand text-[9px] font-semibold text-olive">
-                          {(staff?.display_name ?? "?")[0]}
-                        </div>
-                        <p className="text-[11px] text-olive/45">
-                          {staff?.display_name ?? "Team"} ·{" "}
-                          {format(new Date(booking.starts_at), "EEE d MMM")}
-                        </p>
-                      </div>
+                    </div>
+                    {/* Icon */}
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-sage/10">
+                      <Icon size={14} strokeWidth={1.6} className="text-sage" />
                     </div>
                   </div>
                 );
@@ -239,73 +286,69 @@ export function HomeClient() {
           )}
         </section>
 
-        {/* Recent treatments link (desktop) */}
-        <section className="hidden md:block">
-          <div className="mb-2.5 flex items-center justify-between px-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-olive/40">
-              Recent treatments
-            </p>
-            <Link href="/portal/me" className="text-[11px] font-medium text-sage">
-              See all
-            </Link>
+        {/* ── Supplements teaser — small inline card ── */}
+        <div className="flex items-center justify-between rounded-[16px] border border-sand bg-white px-4 py-3.5">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-olive/35">Coming soon</p>
+            <p className="mt-0.5 text-[13px] font-medium text-olive">Nutritional supplements</p>
           </div>
-          <div className="overflow-hidden rounded-[14px] border border-sand bg-white">
-            <p className="p-4 text-[13px] text-olive/40">
-              Visit{" "}
-              <Link href="/portal/me" className="text-sage underline underline-offset-2">
-                your profile
-              </Link>{" "}
-              to see your full treatment history and loyalty rewards.
-            </p>
-          </div>
-        </section>
+          <Link
+            href="/portal/shop"
+            className="rounded-full bg-cream-deep px-3 py-1.5 text-[11px] font-semibold text-olive/60 hover:bg-sand transition-colors"
+          >
+            Notify me
+          </Link>
+        </div>
 
       </div>
 
       {/* ── Right panel — desktop only ────────────────────────────────────── */}
-      <div className="hidden md:flex w-[185px] flex-shrink-0 flex-col gap-4 border-l border-sand/50 p-4">
+      <div className="hidden md:flex w-[200px] flex-shrink-0 flex-col gap-4 border-l border-sand/40 p-4 pt-5">
 
         {/* Points ring */}
-        <div className="rounded-[14px] border border-sand bg-white p-4">
-          <p className="mb-3 text-[13px] font-medium text-olive">Points</p>
-          <div className="flex flex-col items-center">
-            <div className="relative h-[88px] w-[88px]">
-              <svg width="88" height="88" viewBox="0 0 88 88" className="-rotate-90">
-                <circle cx="44" cy="44" r="36" fill="none" stroke="#EDE8E1" strokeWidth="9" />
+        <div className="rounded-[16px] border border-sand bg-white p-4">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.13em] text-olive/35">
+            Loyalty
+          </p>
+          <div className="flex flex-col items-center gap-2">
+            <div className="relative h-[80px] w-[80px]">
+              <svg width="80" height="80" viewBox="0 0 80 80" className="-rotate-90">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#EDE8E1" strokeWidth="7" />
                 <circle
-                  cx="44" cy="44" r="36"
+                  cx="40" cy="40" r="32"
                   fill="none"
                   stroke="#758564"
-                  strokeWidth="9"
+                  strokeWidth="7"
                   strokeDasharray={ringC}
                   strokeDashoffset={ringOffset}
                   strokeLinecap="round"
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[16px] font-medium text-olive">
+                <span className="font-serif text-[15px] font-medium text-olive">
                   {Math.round(ringPct * 100)}%
                 </span>
               </div>
             </div>
-            <p className="mt-2 text-center text-[12px] font-medium text-olive">
-              {getGreeting()}, {firstName}
+            <p className="text-center text-[12px] font-medium text-olive">
+              {points.toLocaleString("en-GB")} pts
             </p>
-            <p className="mt-0.5 text-center text-[11px] text-olive/40">
-              {points.toLocaleString()} pts
-              {loyalty?.nextReward
-                ? ` · ${(maxPts - points).toLocaleString()} to next`
-                : ""}
-            </p>
+            {loyalty?.nextReward && (
+              <p className="text-center text-[10px] text-olive/40 leading-snug">
+                {ptsToNext.toLocaleString("en-GB")} pts to next reward
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Sessions bar chart */}
-        <div className="rounded-[14px] border border-sand bg-white p-4">
-          <p className="mb-3 text-[13px] font-medium text-olive">This week</p>
-          <div className="flex items-end gap-[5px]" style={{ height: 56 }}>
+        {/* Bar chart */}
+        <div className="rounded-[16px] border border-sand bg-white p-4">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.13em] text-olive/35">
+            This week
+          </p>
+          <div className="flex items-end gap-[5px]" style={{ height: 48 }}>
             {weekCounts.map((count, i) => {
-              const barH   = Math.max(4, Math.round((count / maxCount) * 46));
+              const barH   = Math.max(3, Math.round((count / maxCount) * 38));
               const active = i === todayIdx;
               const labels = ["M", "T", "W", "T", "F", "S", "S"];
               return (
@@ -315,19 +358,10 @@ export function HomeClient() {
                   style={{ justifyContent: "flex-end", height: "100%" }}
                 >
                   <div
-                    className="w-full rounded-t-[3px]"
-                    style={{
-                      height: barH,
-                      background: active ? "#758564" : "#EDE8E1",
-                    }}
+                    className="w-full rounded-t-[3px] transition-all"
+                    style={{ height: barH, background: active ? "#758564" : "#DED2C3" }}
                   />
-                  <span
-                    className="text-[9px]"
-                    style={{
-                      color: active ? "#758564" : "#BBC4AA",
-                      fontWeight: active ? 600 : 400,
-                    }}
-                  >
+                  <span className="text-[8px]" style={{ color: active ? "#758564" : "#BBC4AA", fontWeight: active ? 600 : 400 }}>
                     {labels[i]}
                   </span>
                 </div>
@@ -337,44 +371,37 @@ export function HomeClient() {
         </div>
 
         {/* Team */}
-        <div className="rounded-[14px] border border-sand bg-white p-4">
-          <p className="mb-3 text-[13px] font-medium text-olive">Your team</p>
-          <div className="flex flex-col gap-2.5">
+        <div className="rounded-[16px] border border-sand bg-white p-4">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.13em] text-olive/35">
+            Your team
+          </p>
+          <div className="flex flex-col gap-3">
             {(
               [
-                { name: "Tove",  role: "Therapist", bg: "#DED2C3", fg: "#3E3E31" },
                 { name: "Jade",  role: "Therapist", bg: "#BBC4AA", fg: "#3E3E31" },
                 { name: "Nigel", role: "Founder",   bg: "#758564", fg: "#F6F3EE" },
               ] as const
             ).map(({ name, role, bg, fg }) => (
-              <div key={name} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
-                    style={{ background: bg, color: fg }}
-                  >
-                    {name[0]}
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-medium leading-none text-olive">{name}</p>
-                    <p className="mt-0.5 text-[10px] leading-none text-olive/40">{role}</p>
-                  </div>
+              <div key={name} className="flex items-center gap-2">
+                <div
+                  className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
+                  style={{ background: bg, color: fg }}
+                >
+                  {name[0]}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-medium leading-none text-olive">{name}</p>
+                  <p className="mt-0.5 text-[10px] leading-none text-olive/40">{role}</p>
                 </div>
                 <Link
                   href="/portal/book"
-                  className="rounded-full bg-sand/50 px-2 py-1 text-[10px] font-medium text-sage transition-colors hover:bg-sand"
+                  className="text-[10px] font-medium text-sage hover:underline"
                 >
                   Book
                 </Link>
               </div>
             ))}
           </div>
-          <Link
-            href="/portal/book"
-            className="mt-3 flex w-full items-center justify-center rounded-[8px] bg-sand/40 py-2 text-[12px] font-medium text-sage transition-colors hover:bg-sand/70"
-          >
-            See all
-          </Link>
         </div>
 
       </div>
@@ -382,15 +409,14 @@ export function HomeClient() {
   );
 }
 
-// ─── ServiceCards — always show InfraBike + EMS ──────────────────────────────
+// ─── ServiceCards ─────────────────────────────────────────────────────────────
 
 const FIXED_SERVICES = [
-  { key: "bike",  label: "InfraBike",       Icon: Bike, bookFilter: "bike" },
-  { key: "ems",   label: "EMS SupraSculpt", Icon: Zap,  bookFilter: "ems"  },
+  { key: "bike",  label: "InfraBike",       subtitle: "£39 / session", Icon: Bike, bookFilter: "bike" },
+  { key: "ems",   label: "EMS SupraSculpt", subtitle: "£80 / session", Icon: Zap,  bookFilter: "ems"  },
 ] as const;
 
 function ServiceCards({ activePacks }: { activePacks: ActivePack[] }) {
-  // Map active packs by service name keyword for quick lookup
   const packByKey = new Map<string, ActivePack>();
   for (const pack of activePacks) {
     const name = (pickFirst(pack.services)?.name ?? "").toLowerCase();
@@ -400,51 +426,50 @@ function ServiceCards({ activePacks }: { activePacks: ActivePack[] }) {
 
   return (
     <section>
-      <p className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-olive/40">
+      <p className="mb-3 px-0.5 text-[10px] font-semibold uppercase tracking-[0.13em] text-olive/35">
         Your services
       </p>
       <div className="grid grid-cols-2 gap-2.5">
-        {FIXED_SERVICES.map(({ key, label, Icon, bookFilter }) => {
+        {FIXED_SERVICES.map(({ key, label, subtitle, Icon, bookFilter }) => {
           const pack = packByKey.get(key);
           const used = pack ? pack.sessions_total - pack.sessions_remaining : null;
+
           return (
             <Link
               key={key}
               href={`/portal/book?filter=${bookFilter}`}
-              className="group rounded-[14px] border border-sand bg-white p-3 transition-colors hover:border-sage/30 hover:bg-sand/10"
+              className="group flex flex-col rounded-[16px] border border-sand bg-white p-4 transition-all hover:border-sage/25 hover:shadow-sm active:scale-[0.98]"
             >
+              {/* Icon row */}
               <div className="mb-3 flex items-center justify-between">
-                <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-sand/60 transition-colors group-hover:bg-sage/10">
-                  <Icon size={15} strokeWidth={1.6} className="text-sage" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-sage/8 transition-colors group-hover:bg-sage/12">
+                  <Icon size={16} strokeWidth={1.5} className="text-sage" />
                 </div>
                 {pack && (
-                  <span className="text-[10px] font-semibold text-sage">
+                  <span className="rounded-full bg-sage/10 px-2 py-0.5 text-[10px] font-semibold text-sage">
                     {pack.sessions_remaining} left
                   </span>
                 )}
               </div>
+
+              {/* Label */}
+              <p className="text-[13px] font-medium text-olive">{label}</p>
+
               {pack ? (
                 <>
-                  <p className="text-[11px] text-olive/40">
-                    {used} / {pack.sessions_total} sessions used
+                  <p className="mt-0.5 text-[11px] text-olive/40">
+                    {used} / {pack.sessions_total} used
                   </p>
-                  <p className="mt-0.5 text-[13px] font-medium text-olive">{label}</p>
                   {/* Progress bar */}
-                  <div className="mt-2.5 h-1 w-full overflow-hidden rounded-full bg-sand/60">
+                  <div className="mt-2.5 h-[3px] w-full overflow-hidden rounded-full bg-sand/70">
                     <div
-                      className="h-full rounded-full bg-sage"
+                      className="h-full rounded-full bg-sage transition-all"
                       style={{ width: `${Math.round(((used ?? 0) / pack.sessions_total) * 100)}%` }}
                     />
                   </div>
                 </>
               ) : (
-                <>
-                  <p className="text-[11px] text-olive/40">Single sessions from</p>
-                  <p className="mt-0.5 text-[13px] font-medium text-olive">{label}</p>
-                  <p className="mt-1 text-[11px] font-medium text-sage">
-                    {key === "bike" ? "£39 / session" : "£80 / session"}
-                  </p>
-                </>
+                <p className="mt-0.5 text-[11px] font-medium text-sage">{subtitle}</p>
               )}
             </Link>
           );
@@ -458,32 +483,27 @@ function ServiceCards({ activePacks }: { activePacks: ActivePack[] }) {
 
 function HomeSkeleton() {
   return (
-    <div className="flex flex-col gap-5 p-4 md:flex-row md:p-6">
-      <div className="flex flex-1 flex-col gap-5">
-        <div className="h-[148px] animate-pulse rounded-[20px] bg-olive/10" />
+    <div className="flex flex-col gap-4 p-4 md:flex-row md:gap-5 md:p-6">
+      <div className="flex flex-1 flex-col gap-4">
+        <div className="h-[164px] animate-pulse rounded-[22px] bg-olive/10" />
+        <div className="grid grid-cols-3 gap-2.5">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-[80px] animate-pulse rounded-[16px] bg-sand/60" style={{ animationDelay: `${i * 50}ms` }} />
+          ))}
+        </div>
         <div className="grid grid-cols-2 gap-2.5">
           {[0, 1].map((i) => (
-            <div
-              key={i}
-              className="h-[90px] animate-pulse rounded-[14px] bg-sand/60"
-              style={{ animationDelay: `${i * 60}ms` }}
-            />
+            <div key={i} className="h-[96px] animate-pulse rounded-[16px] bg-sand/60" style={{ animationDelay: `${i * 60}ms` }} />
           ))}
         </div>
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="h-[150px] animate-pulse rounded-[14px] bg-sand/60"
-              style={{ animationDelay: `${i * 80}ms` }}
-            />
-          ))}
-        </div>
+        {[0, 1].map((i) => (
+          <div key={i} className="h-[64px] animate-pulse rounded-[16px] bg-sand/60" style={{ animationDelay: `${i * 80}ms` }} />
+        ))}
       </div>
-      <div className="hidden md:flex w-[185px] flex-col gap-4">
-        <div className="h-[160px] animate-pulse rounded-[14px] bg-sand/60" />
-        <div className="h-[100px] animate-pulse rounded-[14px] bg-sand/60" />
-        <div className="h-[160px] animate-pulse rounded-[14px] bg-sand/60" />
+      <div className="hidden md:flex w-[200px] flex-col gap-4">
+        <div className="h-[160px] animate-pulse rounded-[16px] bg-sand/60" />
+        <div className="h-[90px] animate-pulse rounded-[16px] bg-sand/60" />
+        <div className="h-[130px] animate-pulse rounded-[16px] bg-sand/60" />
       </div>
     </div>
   );
